@@ -24,7 +24,7 @@ except:
 def load_medical_data():
     """Load and preprocess the medical dataset"""
     try:
-        df = pd.read_csv('fake_review_dataset.csv')
+        df = pd.read_csv('comprehensive_medical_dataset.csv')
         print(f"Loaded dataset with {len(df)} records")
         return df
     except Exception as e:
