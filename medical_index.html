@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediAI - Advanced Medical Consultation Platform</title>
+
+    <!-- External CDN Libraries -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-color: #1a76d2;
+            --primary-light: #e8f0fe;
+            --secondary-color: #00c6ab;
+            --accent-color: #ff6b6b;
+            --success-color: #28a745;
+            --info-color: #17a2b8;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+            --gray-color: #6c757d;
+            --border-radius: 16px;
+            --box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            --transition: all 0.3s ease;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+            margin: 0;
+            padding: 0;
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%) !important;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1rem 0;
+            box-shadow: var(--box-shadow);
+        }
+
+        .navbar-brand {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: white !important;
+        }
+
+        .hero-section {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 4rem 0;
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+        }
+
+        .hero-subtitle {
+            font-size: 1.25rem;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            border: none;
+            overflow: hidden;
+            transition: var(--transition);
+            margin-bottom: 2rem;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn {
+            border-radius: 12px;
+            font-weight: 600;
+            transition: var(--transition);
+            padding: 12px 24px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            border: none;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 36px rgba(26, 118, 210, 0.3);
+        }
+
+        .form-control {
+            border-radius: 12px;
+            border: 2px solid #e9ecef;
+            padding: 15px 20px;
+            font-size: 16px;
+            transition: var(--transition);
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(26, 118, 210, 0.25);
+        }
+
+        .diagnosis-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            border-left: 5px solid var(--primary-color);
+        }
+
+        .confidence-bar {
+            background: #e9ecef;
+            border-radius: 10px;
+            height: 8px;
+            overflow: hidden;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.8s ease;
+        }
+
+        .confidence-high { background: var(--success-color); }
+        .confidence-medium { background: var(--warning-color); }
+        .confidence-low { background: var(--danger-color); }
+
+        .symptom-input {
+            min-height: 150px;
+            resize: vertical;
+        }
+
+        .prediction-item {
+            background: rgba(26, 118, 210, 0.05);
+            border: 1px solid rgba(26, 118, 210, 0.1);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            transition: var(--transition);
+        }
+
+        .prediction-item:hover {
+            background: rgba(26, 118, 210, 0.1);
+        }
+
+        .recommendation-item {
+            background: rgba(0, 198, 171, 0.05);
+            border-left: 4px solid var(--secondary-color);
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-card {
+            text-align: center;
+            padding: 2rem;
+            height: 100%;
+            transition: var(--transition);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+        }
+
+        .alert {
+            border-radius: var(--border-radius);
+            border: none;
+            padding: 1rem 1.5rem;
+            margin: 1rem 0;
+        }
+
+        .urgency-high {
+            background: rgba(220, 53, 69, 0.1);
+            color: var(--danger-color);
+            border-left: 4px solid var(--danger-color);
+        }
+
+        .urgency-normal {
+            background: rgba(40, 167, 69, 0.1);
+            color: var(--success-color);
+            border-left: 4px solid var(--success-color);
+        }
+
+        .disease-info-section {
+            background: linear-gradient(135deg, rgba(26, 118, 210, 0.05) 0%, rgba(0, 198, 171, 0.05) 100%);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .hidden { display: none !important; }
+
+        @media (max-width: 768px) {
+            .hero-title { font-size: 2.5rem; }
+            .card { margin: 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold d-flex align-items-center" href="#">
+                <i class="fas fa-stethoscope me-2"></i>
+                <span>MediAI</span>
+            </a>
+            <div class="d-flex align-items-center text-white">
+                <i class="fas fa-shield-alt me-2"></i>
+                <small>Secure & Private</small>
+            </div>
+        </div>
+    </nav>
+
+    <main style="padding-top: 80px;">
+        <!-- Hero Section -->
+        <div class="hero-section">
+            <div class="container text-center">
+                <h1 class="hero-title">Advanced AI Medical Consultation</h1>
+                <p class="hero-subtitle">Get instant, AI-powered medical insights based on your symptoms. Professional-grade analysis with comprehensive recommendations.</p>
+                <div class="d-flex justify-content-center gap-3 flex-wrap">
+                    <div class="badge bg-light text-primary fs-6 p-2">
+                        <i class="fas fa-brain me-1"></i> 15+ Disease Categories
+                    </div>
+                    <div class="badge bg-light text-primary fs-6 p-2">
+                        <i class="fas fa-chart-line me-1"></i> 90%+ Accuracy
+                    </div>
+                    <div class="badge bg-light text-primary fs-6 p-2">
+                        <i class="fas fa-clock me-1"></i> Instant Results
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <!-- Features Section -->
+            <div class="row g-4 mb-5">
+                <div class="col-md-4">
+                    <div class="card feature-card h-100">
+                        <div class="card-body">
+                            <div class="feature-icon">
+                                <i class="fas fa-microscope"></i>
+                            </div>
+                            <h4 class="card-title">Advanced Analysis</h4>
+                            <p class="card-text">State-of-the-art machine learning algorithms analyze your symptoms with medical-grade precision.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card feature-card h-100">
+                        <div class="card-body">
+                            <div class="feature-icon">
+                                <i class="fas fa-user-md"></i>
+                            </div>
+                            <h4 class="card-title">Professional Insights</h4>
+                            <p class="card-text">Receive detailed information about potential conditions, treatments, and specialist recommendations.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card feature-card h-100">
+                        <div class="card-body">
+                            <div class="feature-icon">
+                                <i class="fas fa-lock"></i>
+                            </div>
+                            <h4 class="card-title">Secure & Private</h4>
+                            <p class="card-text">Your health information is protected with enterprise-grade security and complete privacy.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Consultation Interface -->
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white">
+                            <h4 class="mb-0">
+                                <i class="fas fa-notes-medical me-2"></i>
+                                Describe Your Symptoms
+                            </h4>
+                        </div>
+                        <div class="card-body">
+                            <form id="symptomsForm">
+                                <div class="mb-3">
+                                    <label for="symptomsInput" class="form-label fw-semibold">
+                                        <i class="fas fa-edit me-1"></i>
+                                        Please describe your symptoms in detail:
+                                    </label>
+                                    <textarea 
+                                        class="form-control symptom-input" 
+                                        id="symptomsInput" 
+                                        placeholder="Example: I have been experiencing a persistent headache for 2 days, along with nausea, sensitivity to light, and mild fever. The pain is throbbing and located mainly on the left side of my head..."
+                                        required
+                                    ></textarea>
+                                    <small class="form-text text-muted">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Be as detailed as possible. Include duration, intensity, location, and any associated symptoms.
+                                    </small>
+                                </div>
+
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-primary btn-lg" id="analyzeBtn">
+                                        <i class="fas fa-search me-2"></i>
+                                        Analyze Symptoms
+                                    </button>
+                                </div>
+                            </form>
+
+                            <div id="loadingSpinner" class="text-center hidden">
+                                <div class="spinner"></div>
+                                <p class="mt-2 text-muted">Analyzing your symptoms...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div id="resultsContainer" class="hidden">
+                        <!-- Diagnosis Results -->
+                        <div class="card diagnosis-card">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-diagnoses me-2"></i>
+                                    Diagnosis Results
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="primaryDiagnosis">
+                                    <!-- Primary diagnosis will be inserted here -->
+                                </div>
+
+                                <div id="confidenceSection" class="mt-3">
+                                    <h6><i class="fas fa-percentage me-2"></i>Confidence Level</h6>
+                                    <div class="confidence-bar">
+                                        <div id="confidenceFill" class="confidence-fill"></div>
+                                    </div>
+                                    <small class="text-muted mt-1" id="confidenceText"></small>
+                                </div>
+
+                                <div id="urgencyAlert" class="mt-3">
+                                    <!-- Urgency alert will be inserted here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Alternative Diagnoses -->
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-list me-2"></i>
+                                    Alternative Possibilities
+                                </h6>
+                            </div>
+                            <div class="card-body" id="alternativeDiagnoses">
+                                <!-- Alternative diagnoses will be inserted here -->
+                            </div>
+                        </div>
+
+                        <!-- Recommendations -->
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-clipboard-list me-2"></i>
+                                    Medical Recommendations
+                                </h6>
+                            </div>
+                            <div class="card-body" id="recommendations">
+                                <!-- Recommendations will be inserted here -->
+                            </div>
+                        </div>
+
+                        <!-- Detailed Disease Information -->
+                        <div class="card mt-3" id="diseaseInfoCard">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    Detailed Information
+                                </h6>
+                            </div>
+                            <div class="card-body" id="diseaseInfo">
+                                <!-- Disease information will be inserted here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Error Display -->
+                    <div id="errorContainer" class="hidden">
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <span id="errorMessage"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Important Disclaimer -->
+            <div class="row mt-5">
+                <div class="col-12">
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-exclamation-triangle me-2"></i>Important Medical Disclaimer</h6>
+                        <p class="mb-0">
+                            This AI-powered diagnostic tool is designed for informational and educational purposes only. 
+                            It should not be used as a substitute for professional medical advice, diagnosis, or treatment. 
+                            Always seek the advice of qualified healthcare providers with questions about medical conditions. 
+                            In case of medical emergencies, contact emergency services immediately.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white mt-5 py-4">
+        <div class="container text-center">
+            <p>&copy; 2024 MediAI. Advanced Medical Consultation Platform. All rights reserved.</p>
+            <small class="text-muted">
+                Powered by Machine Learning • Secure & Private • For Educational Use
+            </small>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Application State
+        let isAnalyzing = false;
+
+        // DOM Elements
+        const symptomsForm = document.getElementById('symptomsForm');
+        const symptomsInput = document.getElementById('symptomsInput');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const errorContainer = document.getElementById('errorContainer');
+
+        // Event Listeners
+        symptomsForm.addEventListener('submit', handleSubmit);
+
+        async function handleSubmit(event) {
+            event.preventDefault();
+
+            if (isAnalyzing) return;
+
+            const symptoms = symptomsInput.value.trim();
+            if (!symptoms) {
+                showError('Please describe your symptoms before analyzing.');
+                return;
+            }
+
+            if (symptoms.length < 10) {
+                showError('Please provide more detailed symptoms for better analysis.');
+                return;
+            }
+
+            await analyzeSymptoms(symptoms);
+        }
+
+        async function analyzeSymptoms(symptoms) {
+            try {
+                isAnalyzing = true;
+                showLoading();
+                hideError();
+                hideResults();
+
+                const response = await fetch('/api/diagnose', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ symptoms: symptoms })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to analyze symptoms');
+                }
+
+                if (data.success) {
+                    displayResults(data);
+                } else {
+                    throw new Error(data.error || 'Analysis failed');
+                }
+
+            } catch (error) {
+                console.error('Analysis error:', error);
+                showError(error.message || 'Failed to analyze symptoms. Please try again.');
+            } finally {
+                isAnalyzing = false;
+                hideLoading();
+            }
+        }
+
+        function displayResults(data) {
+            // Primary Diagnosis
+            document.getElementById('primaryDiagnosis').innerHTML = `
+                <h5 class="text-primary mb-2">
+                    <i class="fas fa-diagnoses me-2"></i>
+                    ${data.primary_diagnosis}
+                </h5>
+                <p class="text-muted mb-0">Primary diagnostic prediction based on your symptoms</p>
+            `;
+
+            // Confidence Level
+            const confidence = Math.round(data.confidence);
+            const confidenceFill = document.getElementById('confidenceFill');
+            const confidenceText = document.getElementById('confidenceText');
+
+            confidenceFill.style.width = confidence + '%';
+            confidenceText.textContent = `${confidence}% confidence`;
+
+            // Set confidence color
+            confidenceFill.className = 'confidence-fill ' + 
+                (confidence >= 80 ? 'confidence-high' : 
+                 confidence >= 60 ? 'confidence-medium' : 'confidence-low');
+
+            // Urgency Assessment
+            const hasUrgentKeywords = data.disease_info && 
+                data.disease_info.consultation_urgency === 'urgent';
+
+            document.getElementById('urgencyAlert').innerHTML = hasUrgentKeywords ? 
+                '<div class="alert urgency-high"><i class="fas fa-exclamation-triangle me-2"></i>High Priority - Seek immediate medical attention</div>' :
+                '<div class="alert urgency-normal"><i class="fas fa-check-circle me-2"></i>Normal Priority - Routine consultation recommended</div>';
+
+            // Alternative Diagnoses
+            if (data.top_predictions && data.top_predictions.length > 1) {
+                const alternatives = data.top_predictions.slice(1).map(pred => `
+                    <div class="prediction-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="fw-semibold">${pred.disease}</span>
+                            <span class="badge bg-primary">${Math.round(pred.probability)}%</span>
+                        </div>
+                    </div>
+                `).join('');
+
+                document.getElementById('alternativeDiagnoses').innerHTML = alternatives;
+            }
+
+            // Recommendations
+            if (data.recommendation && Array.isArray(data.recommendation)) {
+                const recommendations = data.recommendation.map(rec => `
+                    <div class="recommendation-item">${rec}</div>
+                `).join('');
+
+                document.getElementById('recommendations').innerHTML = recommendations;
+            }
+
+            // Disease Information
+            if (data.disease_info) {
+                const info = data.disease_info;
+                document.getElementById('diseaseInfo').innerHTML = `
+                    <div class="disease-info-section">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-pills me-2"></i>Common Treatments</h6>
+                                <ul class="list-unstyled">
+                                    ${info.common_treatments ? info.common_treatments.slice(0, 3).map(treatment => 
+                                        `<li><i class="fas fa-check text-success me-2"></i>${treatment}</li>`
+                                    ).join('') : '<li>Information not available</li>'}
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-user-md me-2"></i>Specialist</h6>
+                                <p class="mb-2">${info.specialist || 'General Practitioner'}</p>
+
+                                <h6><i class="fas fa-exclamation-circle me-2"></i>Severity</h6>
+                                <span class="badge ${getSeverityColor(info.severity)}">${info.severity || 'Unknown'}</span>
+                            </div>
+                        </div>
+
+                        ${info.prevention ? `
+                            <div class="mt-3">
+                                <h6><i class="fas fa-shield-alt me-2"></i>Prevention Tips</h6>
+                                <ul class="list-unstyled">
+                                    ${info.prevention.slice(0, 3).map(tip => 
+                                        `<li><i class="fas fa-lightbulb text-warning me-2"></i>${tip}</li>`
+                                    ).join('')}
+                                </ul>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+
+            showResults();
+        }
+
+        function getSeverityColor(severity) {
+            switch(severity ? severity.toLowerCase() : '') {
+                case 'severe': return 'bg-danger';
+                case 'moderate': return 'bg-warning';
+                case 'mild': return 'bg-success';
+                default: return 'bg-secondary';
+            }
+        }
+
+        function showLoading() {
+            loadingSpinner.classList.remove('hidden');
+            analyzeBtn.disabled = true;
+            analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Analyzing...';
+        }
+
+        function hideLoading() {
+            loadingSpinner.classList.add('hidden');
+            analyzeBtn.disabled = false;
+            analyzeBtn.innerHTML = '<i class="fas fa-search me-2"></i>Analyze Symptoms';
+        }
+
+        function showResults() {
+            resultsContainer.classList.remove('hidden');
+        }
+
+        function hideResults() {
+            resultsContainer.classList.add('hidden');
+        }
+
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            errorContainer.classList.remove('hidden');
+        }
+
+        function hideError() {
+            errorContainer.classList.add('hidden');
+        }
+
+        // Auto-resize textarea
+        symptomsInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = this.scrollHeight + 'px';
+        });
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🏥 MediAI - Medical Consultation Platform Loaded');
+        });
+    </script>
+</body>
+</html>
