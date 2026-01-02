@@ -1,247 +1,216 @@
-from flask import Flask, request, jsonify, send_from_directory, session, redirect, url_for
-from medical_model import medical_diagnosis, load_medical_model, train_medical_model
 import os
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-import logging
+from flask import Flask, render_template, jsonify, request, redirect, url_for, session
 from dotenv import load_dotenv
 from authlib.integrations.flask_client import OAuth
-import razorpay
-from models import db, User, Payment
 from flask_login import LoginManager, login_user, logout_user, current_user, login_required
-
-# --- CRITICAL: ALLOW HTTP FOR LOCALHOST ---
-os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
-
-# Setup logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+from werkzeug.middleware.proxy_fix import ProxyFix
+import razorpay
+from models import db, User, Payment, Consultation
+from medical_model import medical_diagnosis
 
 load_dotenv()
 
 app = Flask(__name__)
 
-# --- CONFIGURATION ---
-# Default to 127.0.0.1
-FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://127.0.0.1:5000/')
-OAUTH_REDIRECT_URI = os.environ.get('OAUTH_REDIRECT_URI', 'http://127.0.0.1:5000/auth/callback')
+# --- CRITICAL FOR RENDER DEPLOYMENT ---
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
+# Configuration
+app.secret_key = os.environ.get("SECRET_KEY", "super_secret_key")
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'super-secret-key')
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-app.config['SESSION_COOKIE_SECURE'] = False
 
-# Database
-basedir = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///' + os.path.join(basedir, 'ai_medical.db'))
+# Database Config (Postgres for Render, SQLite for Local)
+database_url = os.environ.get("DATABASE_URL")
+if database_url and database_url.startswith("postgres://"):
+    database_url = database_url.replace("postgres://", "postgresql://", 1)
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url or 'sqlite:///mediai.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Security for Localhost
+if os.environ.get('FLASK_ENV') == 'development':
+    os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 db.init_app(app)
 
+# Login Manager
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
 @login_manager.user_loader
 def load_user(user_id):
-    try:
-        return User.query.get(int(user_id))
-    except Exception:
-        return None
+    return User.query.get(int(user_id))
 
 # OAuth
 oauth = OAuth(app)
-oauth.register(
+google = oauth.register(
     name='google',
-    client_id=os.environ.get('GOOGLE_CLIENT_ID'),
-    client_secret=os.environ.get('GOOGLE_CLIENT_SECRET'),
-    access_token_url='https://oauth2.googleapis.com/token',
-    access_token_params=None,
-    authorize_url='https://accounts.google.com/o/oauth2/v2/auth',
-    authorize_params=None,
-    api_base_url='https://www.googleapis.com/oauth2/v2/',
-    userinfo_endpoint='https://www.googleapis.com/oauth2/v2/userinfo',
+    client_id=os.environ.get("GOOGLE_CLIENT_ID"),
+    client_secret=os.environ.get("GOOGLE_CLIENT_SECRET"),
     server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
-    client_kwargs={'scope': 'openid email profile'},
+    client_kwargs={'scope': 'openid email profile'}
 )
 
 # Razorpay
-RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID')
-RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET')
-razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET)) if RAZORPAY_KEY_ID else None
-
-# Global variables
-model_data = None
-
-def initialize_model():
-    global model_data
-    try:
-        model_data = load_medical_model()
-        return True
-    except Exception:
-        try:
-            train_medical_model()
-            model_data = load_medical_model()
-            return True
-        except Exception:
-            return False
-
-# --- EMAIL FUNCTION ---
-def send_payment_email(user_email, user_name, payment_id, amount):
-    sender_email = os.environ.get('MAIL_USERNAME')
-    sender_password = os.environ.get('MAIL_PASSWORD')
-    
-    if not sender_email or not sender_password:
-        return
-
-    subject = "MediAI Subscription Confirmed"
-    body = f"""
-    <h2>Hello {user_name},</h2>
-    <p>Thank you for subscribing to MediAI Pro!</p>
-    <p><strong>Payment ID:</strong> {payment_id}</p>
-    <p><strong>Amount:</strong> ₹{amount/100}</p>
-    <br><p>Regards,<br>The MediAI Team</p>
-    """
-
-    msg = MIMEMultipart()
-    msg['From'] = sender_email
-    msg['To'] = user_email
-    msg['Subject'] = subject
-    msg.attach(MIMEText(body, 'html'))
-
-    try:
-        server = smtplib.SMTP('smtp.gmail.com', 587)
-        server.starttls()
-        server.login(sender_email, sender_password)
-        server.send_message(msg)
-        server.quit()
-    except Exception as e:
-        logger.error(f"Failed to send email: {e}")
+razorpay_client = razorpay.Client(
+    auth=(os.environ.get("RAZORPAY_KEY_ID"), os.environ.get("RAZORPAY_KEY_SECRET"))
+)
 
 # --- ROUTES ---
 
 @app.route('/')
 def index():
-    return send_from_directory('.', 'index.html')
-
-# --- REPLACE THESE TWO FUNCTIONS IN app.py ---
+    return render_template('index.html', user=current_user)
 
 @app.route('/auth/login')
 def login():
-    # Force the exact URI (bypass .env for now to be safe)
-    # Ensure this matches Google Console EXACTLY
-    forced_uri = 'http://127.0.0.1:5000/auth/callback'
-    return oauth.google.authorize_redirect(forced_uri)
+    redirect_uri = url_for('auth_callback', _external=True)
+    return google.authorize_redirect(redirect_uri)
 
 @app.route('/auth/callback')
 def auth_callback():
     try:
-        # Fetch token with the SAME hardcoded URI
-        token = oauth.google.fetch_access_token(
-            authorization_response=request.url,
-            redirect_uri='http://127.0.0.1:5000/auth/callback'
-        )
+        token = google.authorize_access_token()
+        user_info = google.get('userinfo').json()
         
-        # Get User Info
-        resp = oauth.google.get('userinfo', token=token)
-        user_info = resp.json()
-
-        google_id = user_info.get('id')
+        google_id = user_info.get('sub') or user_info.get('id')
         email = user_info.get('email')
         name = user_info.get('name')
         picture = user_info.get('picture')
 
-        with app.app_context():
-            user = User.query.filter_by(google_id=google_id).first()
-            if not user:
-                user = User(google_id=google_id, email=email, name=name, picture=picture)
-                db.session.add(user)
-                db.session.commit()
-            else:
-                user.email = email
-                user.name = name
-                user.picture = picture
-                db.session.commit()
-            
-            user = User.query.filter_by(google_id=google_id).first()
-            login_user(user)
-
-        return redirect(FRONTEND_URL)
+        user = User.query.filter_by(google_id=google_id).first()
         
+        if not user:
+            # Check for admin email
+            is_admin = (email == os.environ.get("ADMIN_EMAIL"))
+            user = User(google_id=google_id, email=email, name=name, picture=picture, is_admin=is_admin)
+            db.session.add(user)
+            db.session.commit()
+        else:
+            user.picture = picture
+            db.session.commit()
+
+        login_user(user)
+        return redirect('/')
     except Exception as e:
-        logger.error(f"LOGIN FAILED: {e}")
-        # If this fails, do NOT refresh. Go back to homepage.
-        return f"<h3>Login Error: {e}</h3><p>Do not refresh this page. <a href='/'>Return Home</a> and try again.</p>"
+        return f"Auth Error: {str(e)}", 400
+
 @app.route('/auth/logout')
+@login_required
 def logout():
     logout_user()
     return redirect('/')
 
-# --- PAYMENTS ---
-
-@app.route('/payments/create-order', methods=['POST'])
-@login_required
-def create_order():
-    if not razorpay_client: return jsonify({'error': 'Payment gateway error'}), 503
-    
-    amount = 499 * 100 
-    try:
-        order = razorpay_client.order.create({'amount': amount, 'currency': 'INR', 'payment_capture': 1})
-        
-        payment = Payment(
-            user_id=current_user.id,
-            order_id=order['id'],
-            amount=amount,
-            currency='INR',
-            status='created'
-        )
-        db.session.add(payment)
-        db.session.commit()
-        
-        return jsonify({'order': order, 'key': RAZORPAY_KEY_ID})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/payments/confirm', methods=['POST'])
-@login_required
-def confirm_payment():
-    data = request.json
-    razorpay_order_id = data.get('razorpay_order_id')
-    razorpay_payment_id = data.get('razorpay_payment_id')
-    
-    payment = Payment.query.filter_by(order_id=razorpay_order_id).first()
-    if payment:
-        payment.payment_id = razorpay_payment_id
-        payment.status = 'paid'
-        db.session.commit()
-        send_payment_email(current_user.email, current_user.name, razorpay_payment_id, payment.amount)
-        return jsonify({'success': True})
-    return jsonify({'error': 'Order not found'}), 404
-
-# --- API ---
+# --- MEDICAL API ---
 
 @app.route('/api/diagnose', methods=['POST'])
 def diagnose():
+    if not current_user.is_authenticated:
+        return jsonify({'error': 'Please login first'}), 401
+    
+    # Check if user is Pro for detailed analysis (Optional Logic)
+    # if not current_user.is_pro: ... 
+
     data = request.json
     symptoms = data.get('symptoms', '').strip()
-    if not symptoms: return jsonify({'error': 'No symptoms'}), 400
     
+    if not symptoms:
+        return jsonify({'error': 'No symptoms provided'}), 400
+
+    result = medical_diagnosis(symptoms)
+    
+    # Save History
+    cons = Consultation(
+        user_id=current_user.id,
+        symptoms=symptoms,
+        diagnosis=result.get('primary_diagnosis'),
+        confidence=result.get('confidence')
+    )
+    db.session.add(cons)
+    db.session.commit()
+    
+    return jsonify(result)
+
+# --- PAYMENT API ---
+
+@app.route('/api/create_subscription', methods=['POST'])
+@login_required
+def create_subscription():
+    amount = 49900 # ₹499.00
     try:
-        result = medical_diagnosis(symptoms)
-        return jsonify(result)
+        order_data = {'amount': amount, 'currency': 'INR', 'payment_capture': 1}
+        order = razorpay_client.order.create(data=order_data)
+        
+        payment = Payment(user_id=current_user.id, amount=amount, order_id=order['id'])
+        db.session.add(payment)
+        db.session.commit()
+        
+        return jsonify({
+            'order_id': order['id'],
+            'amount': amount,
+            'key': os.environ.get("RAZORPAY_KEY_ID")
+        })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/config')
+@app.route('/api/verify_payment', methods=['POST'])
+@login_required
+def verify_payment():
+    data = request.json
+    try:
+        razorpay_client.utility.verify_payment_signature({
+            'razorpay_order_id': data.get('razorpay_order_id'),
+            'razorpay_payment_id': data.get('razorpay_payment_id'),
+            'razorpay_signature': data.get('razorpay_signature')
+        })
+        
+        payment = Payment.query.filter_by(order_id=data.get('razorpay_order_id')).first()
+        if payment:
+            payment.payment_id = data.get('razorpay_payment_id')
+            payment.status = 'paid'
+            
+            # Upgrade User
+            current_user.is_pro = True
+            db.session.commit()
+            
+            return jsonify({'success': True})
+        return jsonify({'error': 'Order not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+# --- ADMIN API ---
+
+@app.route('/admin')
+@login_required
+def admin_panel():
+    if not current_user.is_admin: return "Forbidden", 403
+    return render_template('admin.html')
+
+@app.route('/api/admin_stats')
+@login_required
+def admin_stats():
+    if not current_user.is_admin: return jsonify({'error': 'Forbidden'}), 403
+    
+    users = User.query.all()
+    payments = Payment.query.filter_by(status='paid').all()
+    
+    return jsonify({
+        'users': [{'name': u.name, 'email': u.email, 'is_pro': u.is_pro} for u in users],
+        'revenue': sum(p.amount for p in payments) / 100
+    })
+
+@app.route('/api/config')
 def get_config():
     return jsonify({
-        'user': current_user.to_dict() if current_user.is_authenticated else None
+        'user': {
+            'name': current_user.name, 
+            'picture': current_user.picture,
+            'is_pro': current_user.is_pro,
+            'is_admin': current_user.is_admin
+        } if current_user.is_authenticated else None
     })
 
 if __name__ == '__main__':
-    if initialize_model():
-        with app.app_context():
-            db.create_all()
-        # Explicit 0.0.0.0 host
-        app.run(debug=True, host='0.0.0.0', port=5000)
+    with app.app_context():
+        db.create_all()
+    app.run(debug=True, port=5000)

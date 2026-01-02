@@ -1,0 +1,26 @@
+:root {
+    --bg-dark: #050507;
+    --primary: #6366f1; /* Indigo */
+    --accent: #ef4444;  /* Red for Medical */
+}
+
+body { background-color: var(--bg-dark); }
+.bg-dark { background-color: var(--bg-dark); }
+.text-primary { color: var(--primary); }
+.text-accent { color: var(--accent); }
+.bg-primary { background-color: var(--primary); }
+
+.glass {
+    background: rgba(30, 41, 59, 0.4);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.bg-gradient-radial {
+    background: radial-gradient(circle at center, rgba(99, 102, 241, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
+}
+
+/* Smooth Inputs */
+input:focus, textarea:focus {
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
+}

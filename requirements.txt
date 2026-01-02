@@ -1,0 +1,14 @@
+Flask==3.0.0
+Flask-SQLAlchemy==3.1.1
+Flask-Login==0.6.3
+Authlib==1.3.0
+requests==2.31.0
+razorpay==1.3.0
+python-dotenv==1.0.0
+gunicorn==21.2.0
+psycopg2-binary==2.9.9
+werkzeug==3.0.1
+pandas==2.1.4
+scikit-learn==1.3.2
+numpy==1.26.2
+nltk==3.8.1

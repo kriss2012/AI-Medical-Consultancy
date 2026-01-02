@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediAI Pro | Advanced Diagnostics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-dark text-white font-sans antialiased">
+
+    <nav class="fixed w-full z-50 glass border-b border-gray-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-heartbeat text-accent text-2xl"></i>
+                    <span class="font-bold text-xl tracking-tight">MediAI Pro</span>
+                </div>
+                <div id="auth-section">
+                    </div>
+            </div>
+        </div>
+    </nav>
+
+    <section class="pt-32 pb-16 px-4 text-center relative overflow-hidden">
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-gradient-radial opacity-20 pointer-events-none"></div>
+        <h1 class="text-5xl md:text-7xl font-extrabold mb-6">
+            Intelligent <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">Healthcare</span>
+        </h1>
+        <p class="text-gray-400 text-xl max-w-2xl mx-auto mb-10">
+            Advanced AI symptom analysis. Get instant insights, professional recommendations, and peace of mind.
+        </p>
+    </section>
+
+    <section class="max-w-7xl mx-auto px-4 pb-20 grid grid-cols-1 lg:grid-cols-2 gap-10">
+        
+        <div class="glass p-8 rounded-2xl border border-gray-800 relative group">
+            <div class="absolute inset-0 bg-primary opacity-5 blur-xl rounded-2xl group-hover:opacity-10 transition"></div>
+            <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                <i class="fas fa-stethoscope text-primary"></i> Symptom Checker
+            </h2>
+            <textarea id="symptoms" rows="5" class="w-full bg-black/40 border border-gray-700 rounded-xl p-4 text-white focus:border-primary outline-none transition" placeholder="Describe your symptoms (e.g., severe headache, fever, nausea)..."></textarea>
+            
+            <button onclick="diagnose()" class="mt-6 w-full bg-primary hover:bg-indigo-600 text-white font-bold py-4 rounded-xl transition shadow-lg shadow-indigo-500/30 flex justify-center items-center gap-2">
+                <span>Analyze Symptoms</span>
+                <i class="fas fa-arrow-right"></i>
+            </button>
+
+            <div id="result-area" class="hidden mt-6 p-6 bg-gray-900/80 rounded-xl border border-gray-700">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-lg text-gray-400">Diagnosis</h3>
+                    <span id="confidence" class="text-xs bg-green-900 text-green-200 px-2 py-1 rounded-full"></span>
+                </div>
+                <p id="diagnosis-text" class="text-3xl font-bold text-white mb-4"></p>
+                <div class="h-px bg-gray-700 my-4"></div>
+                <h4 class="text-sm font-semibold text-accent uppercase tracking-wide mb-2">Recommendation</h4>
+                <ul id="rec-list" class="text-gray-300 space-y-1 list-disc list-inside"></ul>
+            </div>
+        </div>
+
+        <div class="space-y-6">
+            
+            <div id="pro-card" class="glass p-8 rounded-2xl border border-gray-800 relative overflow-hidden">
+                <div class="absolute top-0 right-0 p-4 opacity-10">
+                    <i class="fas fa-crown text-9xl"></i>
+                </div>
+                <h3 class="text-2xl font-bold mb-2">Upgrade to Pro</h3>
+                <p class="text-gray-400 mb-6">Unlock unlimited detailed reports, history tracking, and priority analysis.</p>
+                <ul class="space-y-3 mb-8 text-sm text-gray-300">
+                    <li class="flex items-center gap-2"><i class="fas fa-check text-green-500"></i> detailed Confidence Scores</li>
+                    <li class="flex items-center gap-2"><i class="fas fa-check text-green-500"></i> History Export</li>
+                    <li class="flex items-center gap-2"><i class="fas fa-check text-green-500"></i> 24/7 Priority</li>
+                </ul>
+                <div id="sub-btn-container">
+                    </div>
+            </div>
+
+            <div class="glass p-6 rounded-2xl border border-gray-800">
+                <h3 class="font-bold mb-2 text-gray-300">Disclaimer</h3>
+                <p class="text-xs text-gray-500 leading-relaxed">
+                    MediAI is an assistive tool and does not replace professional medical advice. In case of emergency, contact your local emergency services immediately.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

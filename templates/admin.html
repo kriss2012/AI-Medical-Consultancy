@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | MediAI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --bg-dark: #050507; --primary: #6366f1; }
+        body { background-color: var(--bg-dark); color: white; font-family: sans-serif; }
+        .glass { background: rgba(30, 41, 59, 0.4); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+    </style>
+</head>
+<body class="p-6 md:p-10">
+
+    <div class="max-w-6xl mx-auto">
+        <div class="flex justify-between items-center mb-10">
+            <h1 class="text-3xl font-bold flex items-center gap-3">
+                <i class="fas fa-shield-alt text-indigo-500"></i> Admin Dashboard
+            </h1>
+            <div class="flex gap-4">
+                <a href="/" class="bg-gray-800 hover:bg-gray-700 px-4 py-2 rounded-lg transition">Back to App</a>
+                <a href="/auth/logout" class="bg-red-900/30 text-red-400 hover:bg-red-900/50 px-4 py-2 rounded-lg transition border border-red-900">Logout</a>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            <div class="glass p-6 rounded-2xl border-l-4 border-green-500">
+                <p class="text-gray-400 text-sm uppercase tracking-wide">Total Revenue</p>
+                <h2 class="text-4xl font-bold mt-2 text-green-400" id="revenue">₹0</h2>
+            </div>
+
+            <div class="glass p-6 rounded-2xl border-l-4 border-indigo-500">
+                <p class="text-gray-400 text-sm uppercase tracking-wide">Total Users</p>
+                <h2 class="text-4xl font-bold mt-2 text-white" id="total-users">0</h2>
+            </div>
+
+            <div class="glass p-6 rounded-2xl border-l-4 border-purple-500">
+                <p class="text-gray-400 text-sm uppercase tracking-wide">Pro Subscribers</p>
+                <h2 class="text-4xl font-bold mt-2 text-purple-400" id="pro-users">0</h2>
+            </div>
+        </div>
+
+        <div class="glass rounded-2xl overflow-hidden">
+            <div class="p-6 border-b border-gray-700">
+                <h3 class="text-xl font-bold">Registered Users</h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-gray-800 text-gray-400 uppercase text-xs">
+                        <tr>
+                            <th class="px-6 py-4">Name</th>
+                            <th class="px-6 py-4">Email</th>
+                            <th class="px-6 py-4">Status</th>
+                            <th class="px-6 py-4 text-right">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-800" id="users-table">
+                        <tr>
+                            <td colspan="4" class="px-6 py-8 text-center text-gray-500">Loading data...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function loadAdminData() {
+            try {
+                const res = await fetch('/api/admin_stats');
+                
+                if (res.status === 403) {
+                    alert("Access Denied: You are not an admin.");
+                    window.location.href = '/';
+                    return;
+                }
+
+                const data = await res.json();
+                
+                // Update Stats
+                document.getElementById('revenue').innerText = '₹' + data.revenue.toLocaleString();
+                document.getElementById('total-users').innerText = data.users.length;
+                
+                const proCount = data.users.filter(u => u.is_pro).length;
+                document.getElementById('pro-users').innerText = proCount;
+
+                // Update Table
+                const tbody = document.getElementById('users-table');
+                tbody.innerHTML = '';
+
+                if (data.users.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-gray-500">No users found</td></tr>`;
+                    return;
+                }
+
+                data.users.forEach(user => {
+                    const statusBadge = user.is_pro 
+                        ? `<span class="bg-green-900/50 text-green-400 px-3 py-1 rounded-full text-xs font-bold border border-green-800">PRO</span>`
+                        : `<span class="bg-gray-700 text-gray-400 px-3 py-1 rounded-full text-xs font-bold">FREE</span>`;
+
+                    const row = `
+                        <tr class="hover:bg-gray-800/50 transition">
+                            <td class="px-6 py-4 font-medium">${user.name}</td>
+                            <td class="px-6 py-4 text-gray-400">${user.email}</td>
+                            <td class="px-6 py-4">${statusBadge}</td>
+                            <td class="px-6 py-4 text-right">
+                                <button class="text-gray-500 hover:text-white transition" title="View Details">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+
+            } catch (error) {
+                console.error("Error loading admin data:", error);
+                alert("Failed to load admin dashboard.");
+            }
+        }
+
+        // Initialize
+        loadAdminData();
+    </script>
+</body>
+</html>
