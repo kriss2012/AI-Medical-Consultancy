@@ -1,1102 +1,225 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MediAI - Advanced Medical Assistant</title>
-
-    <!-- External CDN Libraries -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-    <!-- Embedded CSS -->
+    <title>MediAI - Intelligent Diagnosis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: '#0f172a',
+                        card: '#1e293b',
+                        accent: '#3b82f6'
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        /* Main Stylesheet */
-        :root {
-            --primary-color: #1a76d2;
-            --primary-light: #e8f0fe;
-            --secondary-color: #00c6ab;
-            --accent-color: #ff6b6b;
-            --success-color: #28a745;
-            --info-color: #17a2b8;
-            --warning-color: #ffc107;
-            --light-color: #f8f9fa;
-            --dark-color: #343a40;
-            --gray-color: #6c757d;
-            --border-radius: 16px;
-            --box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-            --transition: all 0.3s ease;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-
-        main { flex-grow: 1; }
-
-        .card { 
-            border-radius: var(--border-radius); 
-            box-shadow: var(--box-shadow); 
-            border: none; 
-            overflow: hidden;
-            transition: var(--transition);
-        }
-
-        .btn { 
-            border-radius: 12px; 
-            font-weight: 600; 
-            transition: var(--transition);
-            padding: 12px 24px;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-            border: none;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 36px rgba(26, 118, 210, 0.3);
-        }
-
-        /* Login Screen Styles */
-        .login-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .login-container::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><radialGradient id="a" cx="50%" cy="0%" r="100%"><stop offset="0%" stop-color="white" stop-opacity="0.1"/><stop offset="100%" stop-color="white" stop-opacity="0"/></radialGradient></defs><rect width="100" height="100" fill="url(%23a)"/></svg>');
-            opacity: 0.1;
-        }
-
-        .login-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border-radius: 24px;
-            padding: 3rem;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 450px;
-            position: relative;
-            z-index: 10;
-        }
-
-        .login-logo {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-
-        .login-logo i {
-            font-size: 3rem;
-            color: var(--primary-color);
-            margin-bottom: 1rem;
-        }
-
-        .form-control {
-            border-radius: 12px;
-            border: 2px solid #e9ecef;
-            padding: 15px 20px;
-            font-size: 16px;
-            transition: var(--transition);
-        }
-
-        .form-control:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 0.2rem rgba(26, 118, 210, 0.25);
-        }
-
-        .form-floating label {
-            color: var(--gray-color);
-        }
-
-        /* Main App Styles */
-        .main-app {
-            display: none;
-        }
-
-        .main-app.active {
-            display: block;
-        }
-
-        .navbar {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%) !important;
+        body { background-color: #0f172a; color: #e2e8f0; font-family: 'Inter', sans-serif; }
+        .glass {
+            background: rgba(30, 41, 59, 0.7);
             backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 1rem 0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
-
-        .navbar-brand {
-            font-size: 1.5rem;
-            font-weight: 700;
-        }
-
-        .nav-link {
-            font-weight: 500;
-            margin: 0 0.5rem;
-            border-radius: 8px;
-            transition: var(--transition);
-        }
-
-        .nav-link:hover, .nav-link.active {
-            background: rgba(255, 255, 255, 0.2);
-            color: white !important;
-        }
-
-        /* View Management */
-        .view {
-            display: none;
-            padding: 2rem 0;
-            animation: fadeIn 0.5s ease-in-out;
-        }
-
-        .view.active {
-            display: block;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Hero Section */
-        .hero-section {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-            color: white;
-            padding: 4rem 0;
-            border-radius: 0 0 50px 50px;
-            margin-bottom: 3rem;
-        }
-
-        .hero-title {
-            font-size: 3.5rem;
-            font-weight: 700;
-            margin-bottom: 1.5rem;
-        }
-
-        .hero-subtitle {
-            font-size: 1.25rem;
-            opacity: 0.9;
-            margin-bottom: 2rem;
-        }
-
-        /* Feature Cards */
-        .feature-card {
-            text-align: center;
-            padding: 2rem;
-            height: 100%;
-            transition: var(--transition);
-            border: 1px solid rgba(0, 0, 0, 0.05);
-        }
-
-        .feature-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
-        }
-
-        .feature-icon {
-            font-size: 3rem;
-            color: var(--primary-color);
-            margin-bottom: 1.5rem;
-        }
-
-        /* Chat Interface */
-        .chat-container {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        .chat-messages {
-            height: 500px;
-            overflow-y: auto;
-            border: 1px solid #e9ecef;
-            border-radius: var(--border-radius);
-            padding: 1rem;
-            background: white;
-            margin-bottom: 1rem;
-        }
-
-        .message {
-            margin-bottom: 1rem;
-            animation: slideIn 0.3s ease-out;
-        }
-
-        .message.user {
-            text-align: right;
-        }
-
-        .message.ai {
-            text-align: left;
-        }
-
-        .message-bubble {
-            display: inline-block;
-            max-width: 80%;
-            padding: 12px 18px;
-            border-radius: 18px;
-            font-size: 0.95rem;
-            line-height: 1.4;
-        }
-
-        .message.user .message-bubble {
-            background: var(--primary-color);
-            color: white;
-        }
-
-        .message.ai .message-bubble {
-            background: #f1f3f5;
-            color: #333;
-        }
-
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Doctor Cards */
-        .doctor-card {
-            transition: var(--transition);
-            cursor: pointer;
-        }
-
-        .doctor-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 45px rgba(0, 0, 0, 0.1);
-        }
-
-        .doctor-avatar {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin-bottom: 1rem;
-        }
-
-        .rating {
-            color: #ffc107;
-        }
-
-        /* Subscription Cards */
-        .subscription-card {
-            position: relative;
-            transition: var(--transition);
-            border: 2px solid transparent;
-        }
-
-        .subscription-card:hover {
-            transform: translateY(-10px);
-            border-color: var(--primary-color);
-        }
-
-        .subscription-card.popular {
-            border-color: var(--accent-color);
-            transform: scale(1.05);
-        }
-
-        .subscription-card.popular::before {
-            content: 'Most Popular';
-            position: absolute;
-            top: -10px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--accent-color);
-            color: white;
-            padding: 5px 20px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
-        .price {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: var(--primary-color);
-        }
-
-        /* Admin Panel */
-        .admin-badge {
-            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
-            color: white;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            margin-left: 10px;
-        }
-
-        .stats-card {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            color: white;
-            border-radius: var(--border-radius);
-            padding: 1.5rem;
-        }
-
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .hero-title {
-                font-size: 2.5rem;
-            }
-
-            .login-card {
-                padding: 2rem;
-                margin: 1rem;
-            }
-
-            .chat-messages {
-                height: 400px;
-            }
-        }
-
-        /* Loading Spinner */
-        .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid var(--primary-color);
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        .alert {
-            border-radius: var(--border-radius);
-            border: none;
-            padding: 1rem 1.5rem;
-            margin: 1rem 0;
+        .gradient-text {
+            background: linear-gradient(to right, #60a5fa, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
     </style>
 </head>
-<body>
-    <!-- Login Screen -->
-    <div id="loginScreen" class="login-container">
-        <div class="login-card">
-            <div class="login-logo">
-                <i class="fas fa-stethoscope"></i>
-                <h2 class="fw-bold text-primary">MediAI</h2>
-                <p class="text-muted">Advanced Medical Assistant</p>
+<body class="min-h-screen flex flex-col">
+
+    <nav class="fixed w-full z-50 glass border-b border-gray-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <span class="text-2xl font-bold gradient-text">MediAI</span>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4" id="nav-items">
+                        </div>
+                </div>
+                <div id="auth-section">
+                    </div>
             </div>
-
-            <form id="loginForm">
-                <div class="form-floating mb-3">
-                    <input type="email" class="form-control" id="loginEmail" placeholder="name@example.com" required>
-                    <label for="loginEmail">
-                        <i class="fas fa-envelope me-2"></i>Email Address
-                    </label>
-                </div>
-
-                <div class="form-floating mb-4">
-                    <input type="password" class="form-control" id="loginPassword" placeholder="Password" required>
-                    <label for="loginPassword">
-                        <i class="fas fa-lock me-2"></i>Password
-                    </label>
-                </div>
-
-                <div id="loginAlert" class="alert alert-danger hidden">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    Invalid email or password. Please try again.
-                </div>
-
-                <button type="submit" class="btn btn-primary w-100 mb-3">
-                    <i class="fas fa-sign-in-alt me-2"></i>Sign In
-                </button>
-
-                <div class="text-center">
-                    <small class="text-muted">
-                        Use any Google-valid email/password combination<br>
-                    </small>
-                </div>
-            </form>
         </div>
-    </div>
+    </nav>
 
-    <!-- Main Application -->
-    <div id="mainApp" class="main-app">
-        <!-- Navigation -->
-        <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
-            <div class="container">
-                <a class="navbar-brand fw-bold d-flex align-items-center" href="#">
-                    <i class="fas fa-stethoscope me-2"></i>
-                    <span>MediAI</span>
-                    <span id="adminBadge" class="admin-badge hidden">Admin</span>
-                </a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                    <span class="navbar-toggler-icon"></span>
+    <main class="flex-grow pt-24 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
+        
+        <div class="text-center mb-16">
+            <h1 class="text-5xl font-extrabold tracking-tight mb-4">
+                AI-Powered <span class="gradient-text">Medical Assistant</span>
+            </h1>
+            <p class="mt-4 max-w-2xl mx-auto text-xl text-gray-400">
+                Advanced symptom analysis and instant medical insights powered by machine learning.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+            
+            <div class="glass rounded-2xl p-8 shadow-xl">
+                <h2 class="text-2xl font-semibold mb-6 text-white">Symptom Checker</h2>
+                <textarea id="symptoms" rows="5" 
+                    class="w-full bg-gray-900 border border-gray-700 rounded-xl p-4 text-gray-200 focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
+                    placeholder="Describe your symptoms (e.g., severe headache, nausea, fatigue...)"></textarea>
+                
+                <button onclick="diagnose()" 
+                    class="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl transition duration-200 shadow-lg transform hover:-translate-y-1">
+                    Analyze Symptoms
                 </button>
-                <div class="collapse navbar-collapse" id="navbarNav">
-                    <ul class="navbar-nav me-auto">
-                        <li class="nav-item">
-                            <a class="nav-link active" href="#" data-view="home-view">
-                                <i class="fas fa-home me-1"></i>Home
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#" data-view="chat-view">
-                                <i class="fas fa-robot me-1"></i>AI Consultation
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#" data-view="doctors-view">
-                                <i class="fas fa-user-md me-1"></i>Find Doctors
-                            </a>
-                        </li>
-                        <li class="nav-item" id="subscriptionNav">
-                            <a class="nav-link" href="#" data-view="subscription-view">
-                                <i class="fas fa-crown me-1"></i>Subscription
-                            </a>
-                        </li>
-                        <li class="nav-item" id="adminNav" class="hidden">
-                            <a class="nav-link" href="#" data-view="admin-view">
-                                <i class="fas fa-cog me-1"></i>Admin Panel
-                            </a>
-                        </li>
+
+                <div id="result-area" class="mt-8 hidden">
+                    <div class="p-4 bg-gray-800 rounded-xl border border-gray-700">
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="text-lg font-medium text-blue-400">Diagnosis</h3>
+                            <span id="confidence" class="text-xs bg-blue-900 text-blue-200 px-2 py-1 rounded-full"></span>
+                        </div>
+                        <p id="disease-name" class="text-2xl font-bold text-white mb-2"></p>
+                        <div class="h-px bg-gray-700 my-4"></div>
+                        <h4 class="text-sm font-semibold text-gray-400 uppercase tracking-wide">Recommendation</h4>
+                        <ul id="recommendations" class="list-disc list-inside mt-2 text-gray-300 space-y-1"></ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <div class="glass rounded-2xl p-8 border-l-4 border-blue-500">
+                    <h3 class="text-xl font-bold text-white mb-2">Why Go Pro?</h3>
+                    <ul class="space-y-3 text-gray-400">
+                        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Unlimited Consultations</li>
+                        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Detailed Medical Reports</li>
+                        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Priority Email Support</li>
                     </ul>
-                    <ul class="navbar-nav">
-                        <li class="nav-item">
-                            <span class="navbar-text me-3">
-                                <i class="fas fa-user-circle me-1"></i>
-                                <span id="userEmail">user@example.com</span>
-                            </span>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#" onclick="logout()">
-                                <i class="fas fa-sign-out-alt me-1"></i>Logout
-                            </a>
-                        </li>
-                    </ul>
+                    <div id="subscription-cta" class="mt-6">
+                        </div>
                 </div>
-            </div>
-        </nav>
-
-        <main style="padding-top: 80px;">
-            <!-- Home View -->
-            <div id="home-view" class="view active">
-                <div class="hero-section">
-                    <div class="container text-center">
-                        <h1 class="hero-title">Your Advanced Medical AI Assistant</h1>
-                        <p class="hero-subtitle">Get instant AI-powered medical insights, connect with expert doctors, and manage your health seamlessly with our intelligent platform.</p>
-                        <button class="btn btn-light btn-lg me-3" onclick="showView('chat-view')">
-                            <i class="fas fa-robot me-2"></i>Start AI Consultation
-                        </button>
-                        <button class="btn btn-outline-light btn-lg" onclick="showView('doctors-view')">
-                            <i class="fas fa-user-md me-2"></i>Find Doctors
-                        </button>
-                    </div>
-                </div>
-
-                <div class="container">
-                    <div class="row g-4">
-                        <div class="col-md-4">
-                            <div class="card feature-card h-100">
-                                <div class="card-body">
-                                    <div class="feature-icon">
-                                        <i class="fas fa-brain"></i>
-                                    </div>
-                                    <h4 class="card-title">Advanced Symptom Analysis</h4>
-                                    <p class="card-text">Describe your symptoms in detail to receive a comprehensive, data-driven analysis of potential conditions with confidence scores.</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="card feature-card h-100">
-                                <div class="card-body">
-                                    <div class="feature-icon">
-                                        <i class="fas fa-user-md"></i>
-                                    </div>
-                                    <h4 class="card-title">Find Verified Specialists</h4>
-                                    <p class="card-text">Browse profiles of board-certified doctors, filter by specialty, location, and ratings to find the perfect healthcare provider.</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="card feature-card h-100">
-                                <div class="card-body">
-                                    <div class="feature-icon">
-                                        <i class="fas fa-file-medical"></i>
-                                    </div>
-                                    <h4 class="card-title">Digital Health Records</h4>
-                                    <p class="card-text">Securely store and manage your medical reports, consultation history, and prescriptions in one encrypted digital vault.</p>
-                                </div>
-                            </div>
-                        </div>
+                
+                <div class="glass rounded-2xl p-6">
+                    <h3 class="text-lg font-bold text-white mb-4">Recent Activity</h3>
+                    <div class="space-y-4" id="history-list">
+                        <p class="text-gray-500 text-sm">Log in to view history.</p>
                     </div>
                 </div>
             </div>
-
-            <!-- AI Chat View -->
-            <div id="chat-view" class="view">
-                <div class="container">
-                    <div class="chat-container">
-                        <div class="card">
-                            <div class="card-header bg-primary text-white">
-                                <h4 class="mb-0">
-                                    <i class="fas fa-robot me-2"></i>AI Medical Consultation
-                                    <span id="consultationCounter" class="badge bg-light text-primary ms-2">3 Free Left</span>
-                                </h4>
-                            </div>
-                            <div class="card-body">
-                                <div id="chatMessages" class="chat-messages">
-                                    <div class="message ai">
-                                        <div class="message-bubble">
-                                            <strong>MediAI:</strong> Hello! I'm your AI medical assistant. Please describe your symptoms, and I'll provide a comprehensive analysis. Remember, this is for informational purposes only and should not replace professional medical advice.
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="input-group">
-                                    <input type="text" id="messageInput" class="form-control" placeholder="Describe your symptoms..." onkeypress="handleKeyPress(event)">
-                                    <button class="btn btn-primary" onclick="sendMessage()">
-                                        <i class="fas fa-paper-plane"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Doctors View -->
-            <div id="doctors-view" class="view">
-                <div class="container">
-                    <div class="row mb-4">
-                        <div class="col">
-                            <h2 class="mb-3">Find Expert Doctors</h2>
-                            <p class="text-muted">Connect with board-certified specialists for personalized medical consultations.</p>
-                        </div>
-                    </div>
-
-                    <div class="row g-4" id="doctorList">
-                        <!-- Doctors will be loaded here -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- Subscription View -->
-            <div id="subscription-view" class="view">
-                <div class="container">
-                    <div class="row mb-4">
-                        <div class="col text-center">
-                            <h2 class="mb-3">Choose Your Plan</h2>
-                            <p class="text-muted">Unlock premium features and unlimited consultations</p>
-                        </div>
-                    </div>
-
-                    <div class="row g-4 justify-content-center">
-                        <div class="col-md-4">
-                            <div class="card subscription-card h-100">
-                                <div class="card-body text-center p-4">
-                                    <h4 class="card-title">Basic Plan</h4>
-                                    <div class="price mb-3">₹299<small class="text-muted">/month</small></div>
-                                    <ul class="list-unstyled mb-4">
-                                        <li><i class="fas fa-check text-success me-2"></i>10 AI Consultations</li>
-                                        <li><i class="fas fa-check text-success me-2"></i>Basic Health Reports</li>
-                                        <li><i class="fas fa-check text-success me-2"></i>Email Support</li>
-                                        <li><i class="fas fa-times text-muted me-2"></i>Doctor Video Calls</li>
-                                    </ul>
-                                    <button class="btn btn-outline-primary w-100">Choose Plan</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-md-4">
-                            <div class="card subscription-card popular h-100">
-                                <div class="card-body text-center p-4">
-                                    <h4 class="card-title">Premium Plan</h4>
-                                    <div class="price mb-3">₹599<small class="text-muted">/month</small></div>
-                                    <ul class="list-unstyled mb-4">
-                                        <li><i class="fas fa-check text-success me-2"></i>Unlimited AI Consultations</li>
-                                        <li><i class="fas fa-check text-success me-2"></i>Advanced Health Reports</li>
-                                        <li><i class="fas fa-check text-success me-2"></i>5 Doctor Video Calls</li>
-                                        <li><i class="fas fa-check text-success me-2"></i>Priority Support</li>
-                                    </ul>
-                                    <button class="btn btn-primary w-100">Choose Plan</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-md-4">
-                            <div class="card subscription-card h-100">
-                                <div class="card-body text-center p-4">
-                                    <h4 class="card-title">Enterprise Plan</h4>
-                                    <div class="price mb-3">₹999<small class="text-muted">/month</small></div>
-                                    <ul class="list-unstyled mb-4">
-                                        <li><i class="fas fa-check text-success me-2"></i>Everything in Premium</li>
-                                        <li><i class="fas fa-check text-success me-2"></i>Unlimited Doctor Calls</li>
-                                        <li><i class="fas fa-check text-success me-2"></i>Family Account (4 members)</li>
-                                        <li><i class="fas fa-check text-success me-2"></i>24/7 Emergency Support</li>
-                                    </ul>
-                                    <button class="btn btn-primary w-100">Choose Plan</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Admin View -->
-            <div id="admin-view" class="view">
-                <div class="container">
-                    <div class="row mb-4">
-                        <div class="col">
-                            <h2 class="mb-3">
-                                <i class="fas fa-cog me-2"></i>Admin Dashboard
-                            </h2>
-                            <p class="text-muted">Manage users, consultations, and system settings</p>
-                        </div>
-                    </div>
-
-                    <div class="row g-4 mb-4">
-                        <div class="col-md-3">
-                            <div class="card stats-card">
-                                <div class="card-body text-center">
-                                    <i class="fas fa-users fa-2x mb-2"></i>
-                                    <h3 id="totalUsers">1,247</h3>
-                                    <p class="mb-0">Total Users</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="card stats-card">
-                                <div class="card-body text-center">
-                                    <i class="fas fa-comments fa-2x mb-2"></i>
-                                    <h3 id="totalConsultations">3,892</h3>
-                                    <p class="mb-0">Consultations</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="card stats-card">
-                                <div class="card-body text-center">
-                                    <i class="fas fa-user-md fa-2x mb-2"></i>
-                                    <h3 id="activeDoctors">156</h3>
-                                    <p class="mb-0">Active Doctors</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="card stats-card">
-                                <div class="card-body text-center">
-                                    <i class="fas fa-rupee-sign fa-2x mb-2"></i>
-                                    <h3 id="monthlyRevenue">₹2.4L</h3>
-                                    <p class="mb-0">Monthly Revenue</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5 class="mb-0">Recent Users</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="table-responsive">
-                                        <table class="table table-sm">
-                                            <thead>
-                                                <tr>
-                                                    <th>User</th>
-                                                    <th>Plan</th>
-                                                    <th>Status</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="recentUsers">
-                                                <tr>
-                                                    <td>john@example.com</td>
-                                                    <td>Premium</td>
-                                                    <td><span class="badge bg-success">Active</span></td>
-                                                </tr>
-                                                <tr>
-                                                    <td>sarah@example.com</td>
-                                                    <td>Basic</td>
-                                                    <td><span class="badge bg-success">Active</span></td>
-                                                </tr>
-                                                <tr>
-                                                    <td>mike@example.com</td>
-                                                    <td>Enterprise</td>
-                                                    <td><span class="badge bg-warning">Pending</span></td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5 class="mb-0">System Settings</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="mb-3">
-                                        <label class="form-label">AI Response Delay (ms)</label>
-                                        <input type="number" class="form-control" value="1500">
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label">Max Free Consultations</label>
-                                        <input type="number" class="form-control" value="3">
-                                    </div>
-                                    <div class="mb-3">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" checked>
-                                            <label class="form-check-label">
-                                                Enable Email Notifications
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <button class="btn btn-primary">Save Settings</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </main>
-    </div>
-
-    <!-- External Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        </div>
+    </main>
 
     <script>
-        // Application State
         let currentUser = null;
-        let isAdmin = false;
-        let consultationsUsed = 0;
-        let maxFreeConsultations = 3;
 
-        // Authentication Functions
-        function validateEmail(email) {
-            const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
-            return emailRegex.test(email);
+        // Load Config & User
+        async function init() {
+            const res = await fetch('/config');
+            const data = await res.json();
+            currentUser = data.user;
+            renderUI();
         }
 
-        function handleLogin(event) {
-            event.preventDefault();
+        function renderUI() {
+            const authSection = document.getElementById('auth-section');
+            const subCta = document.getElementById('subscription-cta');
 
-            const email = document.getElementById('loginEmail').value;
-            const password = document.getElementById('loginPassword').value;
-            const alertEl = document.getElementById('loginAlert');
-
-            // Admin credentials
-            if (email === 'krishnacpatil2006@gmail.com' && password === '202@Krishna') {
-                currentUser = { email: email, isAdmin: true };
-                isAdmin = true;
-                loginSuccess();
-                return;
-            }
-
-            // Regular user validation (Gmail format required)
-            if (!validateEmail(email)) {
-                showLoginError('Please use a valid Gmail address');
-                return;
-            }
-
-            // Simple password validation (any password for Gmail users)
-            if (password.length < 3) {
-                showLoginError('Password must be at least 3 characters');
-                return;
-            }
-
-            // Successful login for regular users
-            currentUser = { email: email, isAdmin: false };
-            isAdmin = false;
-            loginSuccess();
-        }
-
-        function showLoginError(message) {
-            const alertEl = document.getElementById('loginAlert');
-            alertEl.textContent = message;
-            alertEl.classList.remove('hidden');
-        }
-
-        function loginSuccess() {
-            document.getElementById('loginScreen').style.display = 'none';
-            document.getElementById('mainApp').classList.add('active');
-
-            // Update UI based on user type
-            document.getElementById('userEmail').textContent = currentUser.email;
-
-            if (isAdmin) {
-                document.getElementById('adminBadge').classList.remove('hidden');
-                document.getElementById('adminNav').classList.remove('hidden');
-                document.getElementById('subscriptionNav').style.display = 'none';
-                document.getElementById('consultationCounter').style.display = 'none';
-            } else {
-                document.getElementById('adminBadge').classList.add('hidden');
-                document.getElementById('adminNav').classList.add('hidden');
-                document.getElementById('subscriptionNav').style.display = 'block';
-                updateConsultationCounter();
-            }
-
-            loadDoctors();
-        }
-
-        function logout() {
-            currentUser = null;
-            isAdmin = false;
-            consultationsUsed = 0;
-
-            document.getElementById('loginScreen').style.display = 'flex';
-            document.getElementById('mainApp').classList.remove('active');
-            document.getElementById('loginForm').reset();
-            document.getElementById('loginAlert').classList.add('hidden');
-
-            // Reset to home view
-            showView('home-view');
-        }
-
-        // Navigation Functions
-        function showView(viewId) {
-            // Hide all views
-            document.querySelectorAll('.view').forEach(view => {
-                view.classList.remove('active');
-            });
-
-            // Show selected view
-            document.getElementById(viewId).classList.add('active');
-
-            // Update navigation
-            document.querySelectorAll('.nav-link').forEach(link => {
-                link.classList.remove('active');
-            });
-
-            document.querySelector(`[data-view="${viewId}"]`).classList.add('active');
-        }
-
-        // Chat Functions
-        function updateConsultationCounter() {
-            if (!isAdmin) {
-                const remaining = maxFreeConsultations - consultationsUsed;
-                document.getElementById('consultationCounter').textContent = `${remaining} Free Left`;
-
-                if (remaining <= 0) {
-                    document.getElementById('consultationCounter').textContent = 'Upgrade Required';
-                    document.getElementById('consultationCounter').classList.add('bg-danger');
-                }
-            }
-        }
-
-        function sendMessage() {
-            const input = document.getElementById('messageInput');
-            const message = input.value.trim();
-
-            if (!message) return;
-
-            // Check consultation limits for non-admin users
-            if (!isAdmin && consultationsUsed >= maxFreeConsultations) {
-                addMessage('system', 'You have reached your free consultation limit. Please upgrade your subscription to continue.');
-                return;
-            }
-
-            addMessage('user', message);
-            input.value = '';
-
-            // Increment consultation count for non-admin users
-            if (!isAdmin) {
-                consultationsUsed++;
-                updateConsultationCounter();
-            }
-
-            // Simulate AI response
-            setTimeout(() => {
-                const aiResponse = generateAIResponse(message);
-                addMessage('ai', aiResponse);
-            }, 1500);
-        }
-
-        function addMessage(type, content) {
-            const messagesContainer = document.getElementById('chatMessages');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${type}`;
-
-            const bubbleDiv = document.createElement('div');
-            bubbleDiv.className = 'message-bubble';
-
-            if (type === 'user') {
-                bubbleDiv.innerHTML = `<strong>You:</strong> ${content}`;
-            } else if (type === 'ai') {
-                bubbleDiv.innerHTML = `<strong>MediAI:</strong> ${content}`;
-            } else {
-                bubbleDiv.innerHTML = `<strong>System:</strong> ${content}`;
-                messageDiv.className = 'message ai';
-            }
-
-            messageDiv.appendChild(bubbleDiv);
-            messagesContainer.appendChild(messageDiv);
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }
-
-        function generateAIResponse(userMessage) {
-            const responses = [
-                "Based on your symptoms, I recommend consulting with a healthcare professional for proper diagnosis. In the meantime, ensure adequate rest and hydration.",
-                "Your symptoms could indicate several conditions. I suggest monitoring your symptoms and seeking medical attention if they persist or worsen.",
-                "Thank you for sharing your symptoms. While I can provide general information, it's important to consult with a qualified doctor for personalized medical advice.",
-                "I understand your concerns. Based on the information provided, here are some general recommendations, but please consult a healthcare provider for proper evaluation.",
-                "Your health is important. The symptoms you've described warrant professional medical evaluation. I recommend scheduling an appointment with your doctor."
-            ];
-
-            return responses[Math.floor(Math.random() * responses.length)];
-        }
-
-        function handleKeyPress(event) {
-            if (event.key === 'Enter') {
-                sendMessage();
-            }
-        }
-
-        // Doctor Loading Function
-        function loadDoctors() {
-            const doctorList = document.getElementById('doctorList');
-            const doctors = [
-                {
-                    name: "Dr. Priya Sharma",
-                    specialty: "Cardiologist",
-                    experience: "12 years",
-                    rating: 4.9,
-                    location: "Mumbai",
-                    avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&h=150&fit=crop&crop=face"
-                },
-                {
-                    name: "Dr. Rajesh Kumar",
-                    specialty: "Neurologist", 
-                    experience: "15 years",
-                    rating: 4.8,
-                    location: "Delhi",
-                    avatar: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=150&h=150&fit=crop&crop=face"
-                },
-                {
-                    name: "Dr. Anita Desai",
-                    specialty: "Dermatologist",
-                    experience: "8 years", 
-                    rating: 4.7,
-                    location: "Bangalore",
-                    avatar: "https://images.unsplash.com/photo-1594824476967-48c8b964273f?w=150&h=150&fit=crop&crop=face"
-                },
-                {
-                    name: "Dr. Vikram Singh",
-                    specialty: "Orthopedic Surgeon",
-                    experience: "18 years",
-                    rating: 4.9,
-                    location: "Chennai",
-                    avatar: "https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=150&h=150&fit=crop&crop=face"
-                },
-                {
-                    name: "Dr. Meera Patel",
-                    specialty: "Pediatrician",
-                    experience: "10 years",
-                    rating: 4.8,
-                    location: "Pune",
-                    avatar: "https://images.unsplash.com/photo-1527613426441-4da17471b66d?w=150&h=150&fit=crop&crop=face"
-                },
-                {
-                    name: "Dr. Arjun Reddy",
-                    specialty: "Psychiatrist",
-                    experience: "14 years",
-                    rating: 4.6,
-                    location: "Hyderabad", 
-                    avatar: "https://images.unsplash.com/photo-1607990281513-2c110a25bd8c?w=150&h=150&fit=crop&crop=face"
-                }
-            ];
-
-            doctorList.innerHTML = '';
-
-            doctors.forEach(doctor => {
-                const doctorCard = document.createElement('div');
-                doctorCard.className = 'col-md-6 col-lg-4';
-
-                doctorCard.innerHTML = `
-                    <div class="card doctor-card h-100">
-                        <div class="card-body text-center">
-                            <img src="${doctor.avatar}" alt="${doctor.name}" class="doctor-avatar">
-                            <h5 class="card-title">${doctor.name}</h5>
-                            <p class="text-primary fw-bold">${doctor.specialty}</p>
-                            <p class="text-muted small">
-                                <i class="fas fa-briefcase me-1"></i>${doctor.experience} experience<br>
-                                <i class="fas fa-map-marker-alt me-1"></i>${doctor.location}
-                            </p>
-                            <div class="rating mb-3">
-                                ${'★'.repeat(Math.floor(doctor.rating))} ${doctor.rating}
-                            </div>
-                            <button class="btn btn-primary btn-sm w-100" onclick="bookConsultation('${doctor.name}')">
-                                <i class="fas fa-video me-2"></i>Book Consultation
-                            </button>
-                        </div>
+            if (currentUser) {
+                authSection.innerHTML = `
+                    <div class="flex items-center gap-4">
+                        <span class="text-sm text-gray-300 hidden sm:inline">${currentUser.name}</span>
+                        <img src="${currentUser.picture}" class="h-8 w-8 rounded-full border border-gray-600">
+                        <a href="/auth/logout" class="text-sm text-red-400 hover:text-red-300">Logout</a>
                     </div>
                 `;
-
-                doctorList.appendChild(doctorCard);
-            });
-        }
-
-        function bookConsultation(doctorName) {
-            if (!isAdmin && consultationsUsed >= maxFreeConsultations) {
-                alert('You have reached your free consultation limit. Please upgrade your subscription to continue.');
-                showView('subscription-view');
-                return;
+                
+                subCta.innerHTML = `
+                    <button onclick="startSubscription()" class="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-bold py-3 rounded-xl transition shadow-lg">
+                        Upgrade to Pro (₹499)
+                    </button>
+                `;
+            } else {
+                authSection.innerHTML = `
+                    <a href="/auth/login" class="bg-white text-gray-900 hover:bg-gray-100 px-4 py-2 rounded-lg font-medium transition">
+                        Sign In with Google
+                    </a>
+                `;
+                subCta.innerHTML = `
+                    <p class="text-sm text-gray-500 italic">Sign in to subscribe.</p>
+                `;
             }
-
-            alert(`Booking consultation with ${doctorName}. You will be redirected to the payment page.`);
         }
 
-        // Initialize Application
-        document.addEventListener('DOMContentLoaded', function() {
-            // Add login form event listener
-            document.getElementById('loginForm').addEventListener('submit', handleLogin);
+        async function diagnose() {
+            const symptoms = document.getElementById('symptoms').value;
+            if(!symptoms) return alert('Please enter symptoms');
 
-            // Add navigation event listeners
-            document.querySelectorAll('[data-view]').forEach(link => {
-                link.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    showView(this.getAttribute('data-view'));
+            const btn = document.querySelector('button[onclick="diagnose()"]');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
+            
+            try {
+                const res = await fetch('/api/diagnose', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({symptoms})
                 });
-            });
+                const data = await res.json();
+                
+                document.getElementById('result-area').classList.remove('hidden');
+                document.getElementById('disease-name').innerText = data.primary_diagnosis || "Unknown";
+                document.getElementById('confidence').innerText = (data.confidence * 100).toFixed(1) + "% Match";
+                
+                const recList = document.getElementById('recommendations');
+                recList.innerHTML = '';
+                (data.recommendation || []).forEach(rec => {
+                    const li = document.createElement('li');
+                    li.textContent = rec;
+                    recList.appendChild(li);
+                });
 
-            // Update admin stats periodically
-            setInterval(updateAdminStats, 5000);
-        });
-
-        function updateAdminStats() {
-            if (isAdmin) {
-                // Simulate live data updates
-                const users = Math.floor(Math.random() * 100) + 1200;
-                const consultations = Math.floor(Math.random() * 200) + 3800;
-                const doctors = Math.floor(Math.random() * 20) + 150;
-
-                document.getElementById('totalUsers').textContent = users.toLocaleString();
-                document.getElementById('totalConsultations').textContent = consultations.toLocaleString();
-                document.getElementById('activeDoctors').textContent = doctors;
+            } catch(e) {
+                alert('Analysis failed');
+            } finally {
+                btn.innerText = 'Analyze Symptoms';
             }
         }
+
+        async function startSubscription() {
+            if(!currentUser) return window.location.href = '/auth/login';
+
+            try {
+                const res = await fetch('/payments/create-order', {method: 'POST'});
+                const data = await res.json();
+
+                if(data.error) throw new Error(data.error);
+
+                const options = {
+                    key: data.key,
+                    amount: data.order.amount,
+                    currency: data.order.currency,
+                    name: "MediAI Pro",
+                    description: "Premium Subscription",
+                    order_id: data.order.id,
+                    handler: async function (response) {
+                        await fetch('/payments/confirm', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify(response)
+                        });
+                        alert('Payment Successful! Check your email.');
+                    }
+                };
+                const rzp = new Razorpay(options);
+                rzp.open();
+            } catch(e) {
+                alert('Payment failed: ' + e.message);
+            }
+        }
+
+        init();
     </script>
 </body>
 </html>

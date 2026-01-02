@@ -1,226 +1,249 @@
-from flask import Flask, request, jsonify, render_template, send_from_directory
+from flask import Flask, request, jsonify, render_template, send_from_directory, session, redirect, url_for
 from medical_model import medical_diagnosis, load_medical_model, train_medical_model
 import os
 import json
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from datetime import datetime
 import logging
+from dotenv import load_dotenv
+from authlib.integrations.flask_client import OAuth
+import secrets
+import razorpay
+from models import db, User, Payment
+from flask_login import LoginManager, login_user, logout_user, current_user, login_required
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+load_dotenv()
+
 app = Flask(__name__)
 
-# Configuration
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
-app.config['SECRET_KEY'] = 'your-secret-key-here'
+# --- CONFIGURATION ---
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://127.0.0.1:5000/')
+OAUTH_REDIRECT_URI = os.environ.get('OAUTH_REDIRECT_URI', 'http://127.0.0.1:5000/auth/callback')
+
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'super-secret-key')
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_SECURE'] = False
+
+# Database
+basedir = os.path.abspath(os.path.dirname(__file__))
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///' + os.path.join(basedir, 'ai_medical.db'))
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db.init_app(app)
+
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+
+@login_manager.user_loader
+def load_user(user_id):
+    try:
+        return User.query.get(int(user_id))
+    except Exception:
+        return None
+
+# OAuth
+oauth = OAuth(app)
+oauth.register(
+    name='google',
+    client_id=os.environ.get('GOOGLE_CLIENT_ID'),
+    client_secret=os.environ.get('GOOGLE_CLIENT_SECRET'),
+    access_token_url='https://oauth2.googleapis.com/token',
+    access_token_params=None,
+    authorize_url='https://accounts.google.com/o/oauth2/v2/auth',
+    authorize_params=None,
+    api_base_url='https://www.googleapis.com/oauth2/v2/',
+    userinfo_endpoint='https://www.googleapis.com/oauth2/v2/userinfo',
+    server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
+    client_kwargs={'scope': 'openid email profile'},
+)
+
+# Razorpay
+RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID')
+RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET')
+razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET)) if RAZORPAY_KEY_ID else None
 
 # Global variables
 model_data = None
 consultation_history = []
 
 def initialize_model():
-    """Initialize the medical model"""
     global model_data
     try:
-        logger.info("Loading medical model...")
         model_data = load_medical_model()
-        logger.info("Medical model loaded successfully!")
         return True
-    except Exception as e:
-        logger.error(f"Error loading model: {e}")
-        logger.info("Training new model...")
+    except Exception:
         try:
             train_medical_model()
             model_data = load_medical_model()
-            logger.info("New model trained and loaded successfully!")
             return True
-        except Exception as train_error:
-            logger.error(f"Error training model: {train_error}")
+        except Exception:
             return False
+
+# --- EMAIL FUNCTION ---
+def send_payment_email(user_email, user_name, payment_id, amount):
+    sender_email = os.environ.get('MAIL_USERNAME')
+    sender_password = os.environ.get('MAIL_PASSWORD')
+    
+    if not sender_email or not sender_password:
+        logger.warning("Email credentials not set. Skipping email.")
+        return
+
+    subject = "MediAI Subscription Confirmed"
+    body = f"""
+    <h2>Hello {user_name},</h2>
+    <p>Thank you for subscribing to MediAI Pro!</p>
+    <p><strong>Payment ID:</strong> {payment_id}</p>
+    <p><strong>Amount:</strong> ₹{amount/100}</p>
+    <p>You now have full access to advanced diagnostics.</p>
+    <br>
+    <p>Regards,<br>The MediAI Team</p>
+    """
+
+    msg = MIMEMultipart()
+    msg['From'] = sender_email
+    msg['To'] = user_email
+    msg['Subject'] = subject
+    msg.attach(MIMEText(body, 'html'))
+
+    try:
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(sender_email, sender_password)
+        server.send_message(msg)
+        server.quit()
+        logger.info(f"Email sent to {user_email}")
+    except Exception as e:
+        logger.error(f"Failed to send email: {e}")
+
+# --- ROUTES ---
 
 @app.route('/')
 def index():
-    """Serve the main application"""
     return send_from_directory('.', 'index.html')
+
+@app.route('/auth/login')
+def login():
+    redirect_uri = OAUTH_REDIRECT_URI or url_for('auth_callback', _external=True)
+    session.pop('oauth_state', None)
+    return oauth.google.authorize_redirect(redirect_uri)
+
+@app.route('/auth/callback')
+def auth_callback():
+    try:
+        # MANUAL TOKEN FETCH (Fixes the crash)
+        token = oauth.google.fetch_access_token(
+            authorization_response=request.url
+        )
+        resp = oauth.google.get('userinfo', token=token)
+        user_info = resp.json()
+
+        google_id = user_info.get('id')
+        email = user_info.get('email')
+        name = user_info.get('name')
+        picture = user_info.get('picture')
+
+        with app.app_context():
+            user = User.query.filter_by(google_id=google_id).first()
+            if not user:
+                user = User(google_id=google_id, email=email, name=name, picture=picture)
+                db.session.add(user)
+                db.session.commit()
+            else:
+                user.email = email
+                user.name = name
+                user.picture = picture
+                db.session.commit()
+            
+            user = User.query.filter_by(google_id=google_id).first()
+            login_user(user)
+
+        return redirect(FRONTEND_URL)
+    except Exception as e:
+        logger.error(f"Auth error: {e}")
+        return redirect('/')
+
+@app.route('/auth/logout')
+def logout():
+    logout_user()
+    return redirect('/')
+
+# --- PAYMENTS ---
+
+@app.route('/payments/create-order', methods=['POST'])
+@login_required
+def create_order():
+    if not razorpay_client: return jsonify({'error': 'Payment gateway error'}), 503
+    
+    amount = 499 * 100 # 499 INR
+    try:
+        order = razorpay_client.order.create({'amount': amount, 'currency': 'INR', 'payment_capture': 1})
+        
+        payment = Payment(
+            user_id=current_user.id,
+            order_id=order['id'],
+            amount=amount,
+            currency='INR',
+            status='created'
+        )
+        db.session.add(payment)
+        db.session.commit()
+        
+        return jsonify({'order': order, 'key': RAZORPAY_KEY_ID})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/payments/confirm', methods=['POST'])
+@login_required
+def confirm_payment():
+    data = request.json
+    razorpay_order_id = data.get('razorpay_order_id')
+    razorpay_payment_id = data.get('razorpay_payment_id')
+    
+    payment = Payment.query.filter_by(order_id=razorpay_order_id).first()
+    if payment:
+        payment.payment_id = razorpay_payment_id
+        payment.status = 'paid'
+        db.session.commit()
+        
+        # SEND EMAIL
+        send_payment_email(current_user.email, current_user.name, razorpay_payment_id, payment.amount)
+        
+        return jsonify({'success': True})
+    return jsonify({'error': 'Order not found'}), 404
+
+# --- API ---
 
 @app.route('/api/diagnose', methods=['POST'])
 def diagnose():
-    """Main diagnosis endpoint"""
+    # Only allow paid users or trial? For now, allow all logged in
+    # if not current_user.is_authenticated: return jsonify({'error': 'Login required'}), 401
+    
+    data = request.json
+    symptoms = data.get('symptoms', '').strip()
+    if not symptoms: return jsonify({'error': 'No symptoms'}), 400
+    
     try:
-        data = request.get_json()
-
-        if not data:
-            return jsonify({
-                'error': 'No data provided',
-                'success': False
-            }), 400
-
-        symptoms = data.get('symptoms', '').strip()
-        if not symptoms:
-            return jsonify({
-                'error': 'Please provide symptoms',
-                'success': False
-            }), 400
-
-        # Perform diagnosis
-        logger.info(f"Diagnosing symptoms: {symptoms[:100]}...")
         result = medical_diagnosis(symptoms)
-
-        # Add timestamp and save to history
-        result['timestamp'] = datetime.now().isoformat()
-        result['symptoms_input'] = symptoms
-        result['success'] = True
-
-        # Save to consultation history
-        consultation_history.append(result)
-
-        # Keep only last 100 consultations
-        if len(consultation_history) > 100:
-            consultation_history.pop(0)
-
-        logger.info(f"Diagnosis completed: {result['primary_diagnosis']} ({result['confidence']:.1f}%)")
-
         return jsonify(result)
-
     except Exception as e:
-        logger.error(f"Error in diagnosis: {e}")
-        return jsonify({
-            'error': f'Diagnosis failed: {str(e)}',
-            'success': False,
-            'primary_diagnosis': 'Error',
-            'confidence': 0,
-            'recommendation': ['Please try again or consult a healthcare professional.']
-        }), 500
-
-@app.route('/api/health', methods=['GET'])
-def health_check():
-    """Health check endpoint"""
-    global model_data
-    return jsonify({
-        'status': 'healthy',
-        'model_loaded': model_data is not None,
-        'timestamp': datetime.now().isoformat(),
-        'total_consultations': len(consultation_history)
-    })
-
-@app.route('/api/consultation-history', methods=['GET'])
-def get_consultation_history():
-    """Get consultation history"""
-    limit = request.args.get('limit', 10, type=int)
-    return jsonify({
-        'consultations': consultation_history[-limit:],
-        'total': len(consultation_history)
-    })
-
-@app.route('/api/diseases', methods=['GET'])
-def get_diseases():
-    """Get list of diseases the model can diagnose"""
-    global model_data
-    if model_data:
-        return jsonify({
-            'diseases': model_data.get('diseases', []),
-            'model_accuracy': model_data.get('accuracy', 0),
-            'model_name': model_data.get('model_name', 'Unknown')
-        })
-    else:
-        return jsonify({
-            'error': 'Model not loaded',
-            'diseases': []
-        }), 503
-
-@app.route('/api/symptom-analysis', methods=['POST'])
-def symptom_analysis():
-    """Advanced symptom analysis"""
-    try:
-        data = request.get_json()
-        symptoms = data.get('symptoms', '').strip()
-
-        if not symptoms:
-            return jsonify({'error': 'No symptoms provided'}), 400
-
-        # Get diagnosis
-        diagnosis_result = medical_diagnosis(symptoms)
-
-        # Add additional analysis
-        analysis = {
-            'word_count': len(symptoms.split()),
-            'character_count': len(symptoms),
-            'symptoms_complexity': 'Simple' if len(symptoms.split()) < 10 else 'Detailed',
-            'urgency_indicators': check_urgency_keywords(symptoms),
-            'diagnosis': diagnosis_result
-        }
-
-        return jsonify(analysis)
-
-    except Exception as e:
-        logger.error(f"Error in symptom analysis: {e}")
         return jsonify({'error': str(e)}), 500
 
-def check_urgency_keywords(symptoms):
-    """Check for urgent symptoms keywords"""
-    urgent_keywords = [
-        'severe', 'intense', 'unbearable', 'emergency', 'acute',
-        'sudden', 'rapid', 'difficulty breathing', 'chest pain',
-        'high fever', 'bleeding', 'unconscious', 'seizure'
-    ]
-
-    symptoms_lower = symptoms.lower()
-    found_keywords = [keyword for keyword in urgent_keywords 
-                     if keyword in symptoms_lower]
-
-    return {
-        'urgent_keywords_found': found_keywords,
-        'urgency_level': 'High' if found_keywords else 'Normal',
-        'immediate_attention_needed': len(found_keywords) > 1
-    }
-
-@app.route('/api/retrain-model', methods=['POST'])
-def retrain_model():
-    """Retrain the model (admin function)"""
-    try:
-        logger.info("Retraining model...")
-        train_medical_model()
-
-        # Reload the model
-        global model_data
-        model_data = load_medical_model()
-
-        return jsonify({
-            'success': True,
-            'message': 'Model retrained successfully',
-            'model_accuracy': model_data.get('accuracy', 0),
-            'timestamp': datetime.now().isoformat()
-        })
-
-    except Exception as e:
-        logger.error(f"Error retraining model: {e}")
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
-
-@app.errorhandler(404)
-def not_found(error):
-    return jsonify({'error': 'Endpoint not found'}), 404
-
-@app.errorhandler(500)
-def internal_error(error):
-    return jsonify({'error': 'Internal server error'}), 500
+@app.route('/config')
+def get_config():
+    return jsonify({
+        'user': current_user.to_dict() if current_user.is_authenticated else None
+    })
 
 if __name__ == '__main__':
-    print("🏥 Starting MediAI - Medical Consultation App...")
-    print("📊 Initializing medical diagnosis model...")
-
-    # Initialize the model
     if initialize_model():
-        print("✅ Model loaded successfully!")
-        print("🌐 Starting Flask server...")
-        print("📱 Access the app at: http://localhost:5000")
-        print("🔬 API Health Check: http://localhost:5000/api/health")
-        print("💡 API Diagnose: http://localhost:5000/api/diagnose")
-
+        with app.app_context():
+            db.create_all()
         app.run(debug=True, host='0.0.0.0', port=5000)
-    else:
-        print("❌ Failed to initialize model. Please check your dataset.")
-        print("📋 Make sure 'fake_review_dataset.csv' is in the current directory.")
