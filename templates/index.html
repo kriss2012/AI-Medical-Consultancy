@@ -37,18 +37,22 @@
     <section class="max-w-7xl mx-auto px-4 pb-20 grid grid-cols-1 lg:grid-cols-2 gap-10">
         
         <div class="glass p-8 rounded-2xl border border-gray-800 relative group">
-            <div class="absolute inset-0 bg-primary opacity-5 blur-xl rounded-2xl group-hover:opacity-10 transition"></div>
-            <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+            <div class="absolute inset-0 bg-primary opacity-5 blur-xl rounded-2xl group-hover:opacity-10 transition pointer-events-none"></div>
+            
+            <h2 class="text-2xl font-bold mb-4 flex items-center gap-2 relative z-10">
                 <i class="fas fa-stethoscope text-primary"></i> Symptom Checker
             </h2>
-            <textarea id="symptoms" rows="5" class="w-full bg-black/40 border border-gray-700 rounded-xl p-4 text-white focus:border-primary outline-none transition" placeholder="Describe your symptoms (e.g., severe headache, fever, nausea)..."></textarea>
             
-            <button onclick="diagnose()" class="mt-6 w-full bg-primary hover:bg-indigo-600 text-white font-bold py-4 rounded-xl transition shadow-lg shadow-indigo-500/30 flex justify-center items-center gap-2">
-                <span>Analyze Symptoms</span>
-                <i class="fas fa-arrow-right"></i>
-            </button>
+            <div class="relative z-10">
+                <textarea id="symptoms" rows="5" class="w-full bg-black/40 border border-gray-700 rounded-xl p-4 text-white focus:border-primary outline-none transition" placeholder="Describe your symptoms (e.g., severe headache, fever, nausea)..."></textarea>
+                
+                <button onclick="diagnose()" class="mt-6 w-full bg-primary hover:bg-indigo-600 text-white font-bold py-4 rounded-xl transition shadow-lg shadow-indigo-500/30 flex justify-center items-center gap-2 cursor-pointer">
+                    <span>Analyze Symptoms</span>
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
 
-            <div id="result-area" class="hidden mt-6 p-6 bg-gray-900/80 rounded-xl border border-gray-700">
+            <div id="result-area" class="hidden mt-6 p-6 bg-gray-900/80 rounded-xl border border-gray-700 relative z-10">
                 <div class="flex justify-between items-center mb-2">
                     <h3 class="text-lg text-gray-400">Diagnosis</h3>
                     <span id="confidence" class="text-xs bg-green-900 text-green-200 px-2 py-1 rounded-full"></span>
@@ -63,17 +67,17 @@
         <div class="space-y-6">
             
             <div id="pro-card" class="glass p-8 rounded-2xl border border-gray-800 relative overflow-hidden">
-                <div class="absolute top-0 right-0 p-4 opacity-10">
+                <div class="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
                     <i class="fas fa-crown text-9xl"></i>
                 </div>
-                <h3 class="text-2xl font-bold mb-2">Upgrade to Pro</h3>
-                <p class="text-gray-400 mb-6">Unlock unlimited detailed reports, history tracking, and priority analysis.</p>
-                <ul class="space-y-3 mb-8 text-sm text-gray-300">
-                    <li class="flex items-center gap-2"><i class="fas fa-check text-green-500"></i> detailed Confidence Scores</li>
+                <h3 class="text-2xl font-bold mb-2 relative z-10">Upgrade to Pro</h3>
+                <p class="text-gray-400 mb-6 relative z-10">Unlock unlimited detailed reports, history tracking, and priority analysis.</p>
+                <ul class="space-y-3 mb-8 text-sm text-gray-300 relative z-10">
+                    <li class="flex items-center gap-2"><i class="fas fa-check text-green-500"></i> Detailed Confidence Scores</li>
                     <li class="flex items-center gap-2"><i class="fas fa-check text-green-500"></i> History Export</li>
                     <li class="flex items-center gap-2"><i class="fas fa-check text-green-500"></i> 24/7 Priority</li>
                 </ul>
-                <div id="sub-btn-container">
+                <div id="sub-btn-container" class="relative z-10">
                     </div>
             </div>
 

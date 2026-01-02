@@ -8,27 +8,33 @@ import razorpay
 from models import db, User, Payment, Consultation
 from medical_model import medical_diagnosis
 
+# --- LOAD ENV ---
 load_dotenv()
+
+# --- SECURITY BYPASS FOR LOCALHOST (CRITICAL) ---
+os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 app = Flask(__name__)
 
-# --- CRITICAL FOR RENDER DEPLOYMENT ---
+# --- RENDER/HEROKU PROXY FIX ---
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
-# Configuration
-app.secret_key = os.environ.get("SECRET_KEY", "super_secret_key")
+# --- CONFIGURATION ---
+app.secret_key = os.environ.get("SECRET_KEY", "super_secret_key_123")
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
-# Database Config (Postgres for Render, SQLite for Local)
+# Cookie Settings (Fixes the 400 Error)
+app.config['SESSION_COOKIE_NAME'] = 'mediai_session'
+app.config['SESSION_COOKIE_SECURE'] = False  # Must be False for HTTP/Localhost
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+
+# Database
 database_url = os.environ.get("DATABASE_URL")
 if database_url and database_url.startswith("postgres://"):
     database_url = database_url.replace("postgres://", "postgresql://", 1)
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url or 'sqlite:///mediai.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-# Security for Localhost
-if os.environ.get('FLASK_ENV') == 'development':
-    os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 db.init_app(app)
 
@@ -56,6 +62,9 @@ razorpay_client = razorpay.Client(
     auth=(os.environ.get("RAZORPAY_KEY_ID"), os.environ.get("RAZORPAY_KEY_SECRET"))
 )
 
+# --- HARDCODED REDIRECT URI (Prevents Mismatch Errors) ---
+LOCAL_REDIRECT_URI = "http://127.0.0.1:5000/auth/callback"
+
 # --- ROUTES ---
 
 @app.route('/')
@@ -64,24 +73,29 @@ def index():
 
 @app.route('/auth/login')
 def login():
-    redirect_uri = url_for('auth_callback', _external=True)
-    return google.authorize_redirect(redirect_uri)
+    # Force the specific URI
+    return google.authorize_redirect(LOCAL_REDIRECT_URI)
 
 @app.route('/auth/callback')
 def auth_callback():
     try:
+        # Exchange code for token
         token = google.authorize_access_token()
-        user_info = google.get('userinfo').json()
+        
+        # --- THE FIX IS HERE ---
+        # We use the FULL URL instead of the shortcut 'userinfo'
+        user_info = google.get('https://www.googleapis.com/oauth2/v3/userinfo').json()
         
         google_id = user_info.get('sub') or user_info.get('id')
         email = user_info.get('email')
         name = user_info.get('name')
         picture = user_info.get('picture')
 
+        # Database Logic
         user = User.query.filter_by(google_id=google_id).first()
         
         if not user:
-            # Check for admin email
+            # Check for admin email from .env
             is_admin = (email == os.environ.get("ADMIN_EMAIL"))
             user = User(google_id=google_id, email=email, name=name, picture=picture, is_admin=is_admin)
             db.session.add(user)
@@ -92,13 +106,17 @@ def auth_callback():
 
         login_user(user)
         return redirect('/')
+    
     except Exception as e:
-        return f"Auth Error: {str(e)}", 400
+        # Print error to terminal and browser for debugging
+        print(f"AUTH ERROR: {e}")
+        return f"<h3>Authentication Error</h3><p>{e}</p><p>Please try clearing your browser cookies and trying again.</p><br><a href='/'>Back to Home</a>"
 
 @app.route('/auth/logout')
 @login_required
 def logout():
     logout_user()
+    session.clear()
     return redirect('/')
 
 # --- MEDICAL API ---
@@ -108,9 +126,6 @@ def diagnose():
     if not current_user.is_authenticated:
         return jsonify({'error': 'Please login first'}), 401
     
-    # Check if user is Pro for detailed analysis (Optional Logic)
-    # if not current_user.is_pro: ... 
-
     data = request.json
     symptoms = data.get('symptoms', '').strip()
     
