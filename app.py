@@ -1,18 +1,18 @@
-from flask import Flask, request, jsonify, render_template, send_from_directory, session, redirect, url_for
+from flask import Flask, request, jsonify, send_from_directory, session, redirect, url_for
 from medical_model import medical_diagnosis, load_medical_model, train_medical_model
 import os
-import json
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from datetime import datetime
 import logging
 from dotenv import load_dotenv
 from authlib.integrations.flask_client import OAuth
-import secrets
 import razorpay
 from models import db, User, Payment
 from flask_login import LoginManager, login_user, logout_user, current_user, login_required
+
+# --- CRITICAL: ALLOW HTTP FOR LOCALHOST ---
+os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -23,6 +23,7 @@ load_dotenv()
 app = Flask(__name__)
 
 # --- CONFIGURATION ---
+# Default to 127.0.0.1
 FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://127.0.0.1:5000/')
 OAUTH_REDIRECT_URI = os.environ.get('OAUTH_REDIRECT_URI', 'http://127.0.0.1:5000/auth/callback')
 
@@ -72,7 +73,6 @@ razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET)) i
 
 # Global variables
 model_data = None
-consultation_history = []
 
 def initialize_model():
     global model_data
@@ -93,7 +93,6 @@ def send_payment_email(user_email, user_name, payment_id, amount):
     sender_password = os.environ.get('MAIL_PASSWORD')
     
     if not sender_email or not sender_password:
-        logger.warning("Email credentials not set. Skipping email.")
         return
 
     subject = "MediAI Subscription Confirmed"
@@ -102,9 +101,7 @@ def send_payment_email(user_email, user_name, payment_id, amount):
     <p>Thank you for subscribing to MediAI Pro!</p>
     <p><strong>Payment ID:</strong> {payment_id}</p>
     <p><strong>Amount:</strong> ₹{amount/100}</p>
-    <p>You now have full access to advanced diagnostics.</p>
-    <br>
-    <p>Regards,<br>The MediAI Team</p>
+    <br><p>Regards,<br>The MediAI Team</p>
     """
 
     msg = MIMEMultipart()
@@ -119,7 +116,6 @@ def send_payment_email(user_email, user_name, payment_id, amount):
         server.login(sender_email, sender_password)
         server.send_message(msg)
         server.quit()
-        logger.info(f"Email sent to {user_email}")
     except Exception as e:
         logger.error(f"Failed to send email: {e}")
 
@@ -129,19 +125,25 @@ def send_payment_email(user_email, user_name, payment_id, amount):
 def index():
     return send_from_directory('.', 'index.html')
 
+# --- REPLACE THESE TWO FUNCTIONS IN app.py ---
+
 @app.route('/auth/login')
 def login():
-    redirect_uri = OAUTH_REDIRECT_URI or url_for('auth_callback', _external=True)
-    session.pop('oauth_state', None)
-    return oauth.google.authorize_redirect(redirect_uri)
+    # Force the exact URI (bypass .env for now to be safe)
+    # Ensure this matches Google Console EXACTLY
+    forced_uri = 'http://127.0.0.1:5000/auth/callback'
+    return oauth.google.authorize_redirect(forced_uri)
 
 @app.route('/auth/callback')
 def auth_callback():
     try:
-        # MANUAL TOKEN FETCH (Fixes the crash)
+        # Fetch token with the SAME hardcoded URI
         token = oauth.google.fetch_access_token(
-            authorization_response=request.url
+            authorization_response=request.url,
+            redirect_uri='http://127.0.0.1:5000/auth/callback'
         )
+        
+        # Get User Info
         resp = oauth.google.get('userinfo', token=token)
         user_info = resp.json()
 
@@ -166,10 +168,11 @@ def auth_callback():
             login_user(user)
 
         return redirect(FRONTEND_URL)
+        
     except Exception as e:
-        logger.error(f"Auth error: {e}")
-        return redirect('/')
-
+        logger.error(f"LOGIN FAILED: {e}")
+        # If this fails, do NOT refresh. Go back to homepage.
+        return f"<h3>Login Error: {e}</h3><p>Do not refresh this page. <a href='/'>Return Home</a> and try again.</p>"
 @app.route('/auth/logout')
 def logout():
     logout_user()
@@ -182,7 +185,7 @@ def logout():
 def create_order():
     if not razorpay_client: return jsonify({'error': 'Payment gateway error'}), 503
     
-    amount = 499 * 100 # 499 INR
+    amount = 499 * 100 
     try:
         order = razorpay_client.order.create({'amount': amount, 'currency': 'INR', 'payment_capture': 1})
         
@@ -212,10 +215,7 @@ def confirm_payment():
         payment.payment_id = razorpay_payment_id
         payment.status = 'paid'
         db.session.commit()
-        
-        # SEND EMAIL
         send_payment_email(current_user.email, current_user.name, razorpay_payment_id, payment.amount)
-        
         return jsonify({'success': True})
     return jsonify({'error': 'Order not found'}), 404
 
@@ -223,9 +223,6 @@ def confirm_payment():
 
 @app.route('/api/diagnose', methods=['POST'])
 def diagnose():
-    # Only allow paid users or trial? For now, allow all logged in
-    # if not current_user.is_authenticated: return jsonify({'error': 'Login required'}), 401
-    
     data = request.json
     symptoms = data.get('symptoms', '').strip()
     if not symptoms: return jsonify({'error': 'No symptoms'}), 400
@@ -246,4 +243,5 @@ if __name__ == '__main__':
     if initialize_model():
         with app.app_context():
             db.create_all()
+        # Explicit 0.0.0.0 host
         app.run(debug=True, host='0.0.0.0', port=5000)
