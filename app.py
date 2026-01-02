@@ -3,7 +3,8 @@ from flask import Flask, render_template, jsonify, request, redirect, url_for, s
 from dotenv import load_dotenv
 from authlib.integrations.flask_client import OAuth
 from flask_login import LoginManager, login_user, logout_user, current_user, login_required
-from werkzeug.middleware.proxy_fix import ProxyFix
+# [CRITICAL FIX] This library handles the HTTPS headers from Render
+from werkzeug.middleware.proxy_fix import ProxyFix 
 import razorpay
 from models import db, User, Payment, Consultation
 from medical_model import medical_diagnosis
@@ -11,25 +12,28 @@ from medical_model import medical_diagnosis
 # --- LOAD ENV ---
 load_dotenv()
 
-# --- SECURITY BYPASS FOR LOCALHOST (CRITICAL) ---
-os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+# --- SECURITY BYPASS FOR LOCALHOST ---
+# Only enable insecure transport if we are NOT on Render (Development mode)
+if os.environ.get('FLASK_ENV') == 'development':
+    os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 app = Flask(__name__)
 
-# --- RENDER/HEROKU PROXY FIX ---
+# --- [CRITICAL FIX] PROXY FIX FOR RENDER DEPLOYMENT ---
+# This tells Flask: "Trust that Render is handling HTTPS for us"
+# Without this, Flask generates 'http://' URLs, causing Google Login to fail.
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
 # --- CONFIGURATION ---
 app.secret_key = os.environ.get("SECRET_KEY", "super_secret_key_123")
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
-# Cookie Settings (Fixes the 400 Error)
+# Cookie Settings
 app.config['SESSION_COOKIE_NAME'] = 'mediai_session'
-app.config['SESSION_COOKIE_SECURE'] = False  # Must be False for HTTP/Localhost
-app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_SECURE'] = False # Keep False to support both Local and Render
 
-# Database
+# Database (Auto-detects Postgres on Render)
 database_url = os.environ.get("DATABASE_URL")
 if database_url and database_url.startswith("postgres://"):
     database_url = database_url.replace("postgres://", "postgresql://", 1)
@@ -62,9 +66,6 @@ razorpay_client = razorpay.Client(
     auth=(os.environ.get("RAZORPAY_KEY_ID"), os.environ.get("RAZORPAY_KEY_SECRET"))
 )
 
-# --- HARDCODED REDIRECT URI (Prevents Mismatch Errors) ---
-LOCAL_REDIRECT_URI = "http://127.0.0.1:5000/auth/callback"
-
 # --- ROUTES ---
 
 @app.route('/')
@@ -73,8 +74,9 @@ def index():
 
 @app.route('/auth/login')
 def login():
-    # Force the specific URI
-    return google.authorize_redirect(LOCAL_REDIRECT_URI)
+    # Automatically generates the correct URL (https:// on Render, http:// on Local)
+    redirect_uri = url_for('auth_callback', _external=True)
+    return google.authorize_redirect(redirect_uri)
 
 @app.route('/auth/callback')
 def auth_callback():
@@ -82,8 +84,7 @@ def auth_callback():
         # Exchange code for token
         token = google.authorize_access_token()
         
-        # --- THE FIX IS HERE ---
-        # We use the FULL URL instead of the shortcut 'userinfo'
+        # Get User Info (Full URL fixed)
         user_info = google.get('https://www.googleapis.com/oauth2/v3/userinfo').json()
         
         google_id = user_info.get('sub') or user_info.get('id')
@@ -108,9 +109,8 @@ def auth_callback():
         return redirect('/')
     
     except Exception as e:
-        # Print error to terminal and browser for debugging
         print(f"AUTH ERROR: {e}")
-        return f"<h3>Authentication Error</h3><p>{e}</p><p>Please try clearing your browser cookies and trying again.</p><br><a href='/'>Back to Home</a>"
+        return f"<h3>Authentication Error</h3><p>{e}</p><a href='/'>Back to Home</a>"
 
 @app.route('/auth/logout')
 @login_required
@@ -228,4 +228,5 @@ def get_config():
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
+    # Debug=True is fine for dev, but ProxyFix handles the Prod headers
     app.run(debug=True, port=5000)
