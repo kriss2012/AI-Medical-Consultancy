@@ -1,9 +1,6 @@
-Here is the **`README.md`** file for your project. This guide is tailored for both **Local Development** and **Render Deployment**, ensuring anyone (or future you) can set it up instantly.
-
-### `README.md`
-
-```markdown
 # 🏥 MediAI Pro - Advanced Medical Consultancy Platform
+
+# Live Demo https://ai-medical-consultancy-1.onrender.com
 
 **MediAI Pro** is a Flask-based healthcare application that uses Machine Learning to diagnose symptoms and provides a complete ecosystem for patients and doctors. It features secure Google OAuth login, Razorpay payment integration for Pro subscriptions, an Admin Dashboard, and a modern Dark Mode UI.
 
