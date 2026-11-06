@@ -1,128 +1,124 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard | MediAI</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root { --bg-dark: #050507; --primary: #6366f1; }
-        body { background-color: var(--bg-dark); color: white; font-family: sans-serif; }
-        .glass { background: rgba(30, 41, 59, 0.4); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MED-OS // Admin Operations Deck</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;500;600;700&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body class="p-6 md:p-10">
+<body style="padding: 30px 20px 80px;">
 
-    <div class="max-w-6xl mx-auto">
-        <div class="flex justify-between items-center mb-10">
-            <h1 class="text-3xl font-bold flex items-center gap-3">
-                <i class="fas fa-shield-alt text-indigo-500"></i> Admin Dashboard
-            </h1>
-            <div class="flex gap-4">
-                <a href="/" class="bg-gray-800 hover:bg-gray-700 px-4 py-2 rounded-lg transition">Back to App</a>
-                <a href="/auth/logout" class="bg-red-900/30 text-red-400 hover:bg-red-900/50 px-4 py-2 rounded-lg transition border border-red-900">Logout</a>
-            </div>
+  <canvas id="spaceCanvas"></canvas>
+  <div class="grid-overlay"></div>
+  <div class="scan"></div>
+
+  <div style="max-width: 1200px; margin: 0 auto; position: relative; z-index: 10;">
+    
+    <!-- Header -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; border-bottom: 1px solid var(--bd); padding-bottom: 16px;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div class="brand-emblem" style="border-color: var(--amber); background: var(--amber-dim); box-shadow: 0 0 14px var(--amber);">
+          <svg viewBox="0 0 24 24" style="fill: var(--amber);"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
         </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-            <div class="glass p-6 rounded-2xl border-l-4 border-green-500">
-                <p class="text-gray-400 text-sm uppercase tracking-wide">Total Revenue</p>
-                <h2 class="text-4xl font-bold mt-2 text-green-400" id="revenue">₹0</h2>
-            </div>
-
-            <div class="glass p-6 rounded-2xl border-l-4 border-indigo-500">
-                <p class="text-gray-400 text-sm uppercase tracking-wide">Total Users</p>
-                <h2 class="text-4xl font-bold mt-2 text-white" id="total-users">0</h2>
-            </div>
-
-            <div class="glass p-6 rounded-2xl border-l-4 border-purple-500">
-                <p class="text-gray-400 text-sm uppercase tracking-wide">Pro Subscribers</p>
-                <h2 class="text-4xl font-bold mt-2 text-purple-400" id="pro-users">0</h2>
-            </div>
+        <div>
+          <h1 style="font-family: 'Chakra Petch', sans-serif; font-size: 22px; letter-spacing: 0.16em;">MED-OS // SECURE ADMIN DECK</h1>
+          <span style="font-size: 10px; color: var(--tx2); letter-spacing: 0.12em;">CLASSIFIED CLINICAL OPERATIONS & REVENUE TELEMETRY</span>
         </div>
-
-        <div class="glass rounded-2xl overflow-hidden">
-            <div class="p-6 border-b border-gray-700">
-                <h3 class="text-xl font-bold">Registered Users</h3>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left">
-                    <thead class="bg-gray-800 text-gray-400 uppercase text-xs">
-                        <tr>
-                            <th class="px-6 py-4">Name</th>
-                            <th class="px-6 py-4">Email</th>
-                            <th class="px-6 py-4">Status</th>
-                            <th class="px-6 py-4 text-right">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-800" id="users-table">
-                        <tr>
-                            <td colspan="4" class="px-6 py-8 text-center text-gray-500">Loading data...</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <a href="/" class="hud">RETURN TO CLINICAL HUD</a>
+        <a href="/auth/logout" class="hud" style="color: var(--red);">LOGOUT</a>
+      </div>
     </div>
 
-    <script>
-        async function loadAdminData() {
-            try {
-                const res = await fetch('/api/admin_stats');
-                
-                if (res.status === 403) {
-                    alert("Access Denied: You are not an admin.");
-                    window.location.href = '/';
-                    return;
-                }
+    <!-- Metrics Grid -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px;">
+      
+      <div class="slate" style="padding: 18px;">
+        <div class="presets-lbl">TOTAL REVENUE (INR)</div>
+        <div style="font-family: 'Chakra Petch', sans-serif; font-size: 32px; color: var(--emerald); font-weight: 700;" id="revenue">&#8377;0.00</div>
+        <div style="font-size: 10px; color: var(--tx2); margin-top: 4px;">RAZORPAY VERIFIED SETTLEMENTS</div>
+      </div>
 
-                const data = await res.json();
-                
-                // Update Stats
-                document.getElementById('revenue').innerText = '₹' + data.revenue.toLocaleString();
-                document.getElementById('total-users').innerText = data.users.length;
-                
-                const proCount = data.users.filter(u => u.is_pro).length;
-                document.getElementById('pro-users').innerText = proCount;
+      <div class="slate" style="padding: 18px;">
+        <div class="presets-lbl">TOTAL CLINICAL USERS</div>
+        <div style="font-family: 'Chakra Petch', sans-serif; font-size: 32px; color: #ffffff; font-weight: 700;" id="total-users">0</div>
+        <div style="font-size: 10px; color: var(--tx2); margin-top: 4px;">GOOGLE OAUTH AUTHENTICATED PROFILES</div>
+      </div>
 
-                // Update Table
-                const tbody = document.getElementById('users-table');
-                tbody.innerHTML = '';
+      <div class="slate" style="padding: 18px;">
+        <div class="presets-lbl">PRO ACTIVE SUBSCRIBERS</div>
+        <div style="font-family: 'Chakra Petch', sans-serif; font-size: 32px; color: var(--cyan); font-weight: 700;" id="pro-users">0</div>
+        <div style="font-size: 10px; color: var(--tx2); margin-top: 4px;">UNLIMITED INFERENCE LICENSE TIERS</div>
+      </div>
 
-                if (data.users.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-gray-500">No users found</td></tr>`;
-                    return;
-                }
+    </div>
 
-                data.users.forEach(user => {
-                    const statusBadge = user.is_pro 
-                        ? `<span class="bg-green-900/50 text-green-400 px-3 py-1 rounded-full text-xs font-bold border border-green-800">PRO</span>`
-                        : `<span class="bg-gray-700 text-gray-400 px-3 py-1 rounded-full text-xs font-bold">FREE</span>`;
+    <!-- Users Table Slate -->
+    <div class="slate">
+      <div class="slate-header">
+        <div class="slate-title">
+          <i>â–¶</i> REGISTERED CLINICAL OPERATORS
+        </div>
+        <span class="slate-badge" id="badgeTotalUsers">LIVE DATABASE SNAPSHOT</span>
+      </div>
 
-                    const row = `
-                        <tr class="hover:bg-gray-800/50 transition">
-                            <td class="px-6 py-4 font-medium">${user.name}</td>
-                            <td class="px-6 py-4 text-gray-400">${user.email}</td>
-                            <td class="px-6 py-4">${statusBadge}</td>
-                            <td class="px-6 py-4 text-right">
-                                <button class="text-gray-500 hover:text-white transition" title="View Details">
-                                    <i class="fas fa-ellipsis-v"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                    tbody.innerHTML += row;
-                });
+      <table class="biomarker-table" style="margin-top: 10px;">
+        <thead>
+          <tr>
+            <th>CLINICAL OPERATOR</th>
+            <th>EMAIL IDENTITY</th>
+            <th>SUBSCRIPTION TIER</th>
+            <th style="text-align: right;">STATUS</th>
+          </tr>
+        </thead>
+        <tbody id="users-table">
+          <tr><td colspan="4" style="text-align: center; color: var(--tx2); padding: 20px;">Retrieving telemetry...</td></tr>
+        </tbody>
+      </table>
+    </div>
 
-            } catch (error) {
-                console.error("Error loading admin data:", error);
-                alert("Failed to load admin dashboard.");
-            }
-        }
+  </div>
 
-        // Initialize
-        loadAdminData();
-    </script>
+  <footer class="status-bar">
+    <div class="chip"><span class="dot"></span> <b>ADMIN DECK CONNECTED</b></div>
+    <div class="sp"></div>
+    <span class="chip">NODE: <b>LOCAL_SANDBOX // ADMIN</b></span>
+  </footer>
+
+  <script>
+    async function loadStats() {
+      try {
+        const res = await fetch('/api/admin_stats');
+        const data = await res.json();
+        if (data.error) return;
+
+        document.getElementById('revenue').innerText = 'â‚¹' + (data.revenue || 0).toFixed(2);
+        document.getElementById('total-users').innerText = (data.users || []).length;
+        const proCount = (data.users || []).filter(u => u.is_pro).length;
+        document.getElementById('pro-users').innerText = proCount;
+        document.getElementById('badgeTotalUsers').innerText = `${(data.users || []).length} OPERATORS REGISTERED`;
+
+        const tbody = document.getElementById('users-table');
+        tbody.innerHTML = '';
+        (data.users || []).forEach(u => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td style="font-weight: 600; color: #fff;">${u.name || 'Anonymous'}</td>
+            <td style="color: var(--tx2);">${u.email || 'N/A'}</td>
+            <td><span class="hud ${u.is_pro ? 'emerald' : ''}" style="padding: 2px 6px; font-size: 9px;">${u.is_pro ? 'PRO MATRIX' : 'STANDARD TIER'}</span></td>
+            <td style="text-align: right; color: var(--emerald);">ACTIVE</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    loadStats();
+  </script>
 </body>
 </html>

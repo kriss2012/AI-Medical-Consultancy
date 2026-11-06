@@ -1,111 +1,553 @@
-async function init() {
-    try {
-        const res = await fetch('/api/config');
-        const config = await res.json();
-        renderUI(config.user);
-    } catch (e) { console.error(e); }
+/**
+ * MED-OS // Clinical AI HUD Client Script
+ * Cyberpunk HUD, Web Audio Synthesizer, 3D Canvas Starfield & Diagnostic Telemetry
+ */
+
+// --- AUDIO SYNTHESIZER (Pure Web Audio API) ---
+let audioCtx = null;
+let soundEnabled = false;
+
+function initAudio() {
+  if (!audioCtx) {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    audioCtx = new AudioContext();
+  }
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
 }
 
-function renderUI(user) {
-    const authDiv = document.getElementById('auth-section');
-    const subContainer = document.getElementById('sub-btn-container');
+function playBeep(freq = 880, type = 'sine', duration = 0.05, gainVal = 0.05) {
+  if (!soundEnabled) return;
+  try {
+    initAudio();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    gain.gain.setValueAtTime(gainVal, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+  } catch (e) {
+    // Audio context policy
+  }
+}
 
-    if (user) {
-        // Logged In
-        authDiv.innerHTML = `
-            <div class="flex items-center gap-4">
-                <span class="text-sm text-gray-300 hidden md:inline">${user.name}</span>
-                <img src="${user.picture}" class="h-9 w-9 rounded-full border border-gray-600">
-                ${user.is_admin ? '<a href="/admin" class="text-xs bg-gray-800 px-2 py-1 rounded text-white">Admin</a>' : ''}
-                <a href="/auth/logout" class="text-sm text-red-400 hover:text-red-300">Logout</a>
-            </div>
-        `;
+function playScanSound() {
+  if (!soundEnabled) return;
+  try {
+    initAudio();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(1400, audioCtx.currentTime + 0.15);
+    gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.15);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.15);
+  } catch (e) {}
+}
 
-        if (user.is_pro) {
-            subContainer.innerHTML = `<button disabled class="w-full bg-green-600/20 text-green-500 font-bold py-3 rounded-xl border border-green-500/50">Pro Active</button>`;
-        } else {
-            subContainer.innerHTML = `<button onclick="subscribe()" class="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:opacity-90 text-white font-bold py-3 rounded-xl transition shadow-lg">Upgrade - ₹499</button>`;
-        }
+// --- LOGGING SYSTEM ---
+function addLog(tag, msg, type = 'normal') {
+  const container = document.getElementById('logContent');
+  if (!container) return;
+  const line = document.createElement('div');
+  line.className = 'log-line';
+  const time = new Date().toISOString().substring(11, 19);
+  
+  let valClass = '';
+  if (type === 'ok') valClass = 'ok';
+  else if (type === 'err') valClass = 'err';
+
+  line.innerHTML = `<span class="ts">[${time}]</span> <span class="tag">${tag}</span> <span class="${valClass}">${msg}</span>`;
+  container.appendChild(line);
+  container.scrollTop = container.scrollHeight;
+}
+
+// --- STARFIELD CANVAS ENGINE ---
+function initStarfield() {
+  const canvas = document.getElementById('spaceCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let w = canvas.width = window.innerWidth;
+  let h = canvas.height = window.innerHeight;
+
+  window.addEventListener('resize', () => {
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+  });
+
+  const stars = [];
+  const STAR_COUNT = 90;
+  for (let i = 0; i < STAR_COUNT; i++) {
+    stars.push({
+      x: Math.random() * w,
+      y: Math.random() * h,
+      size: Math.random() * 1.5 + 0.5,
+      alpha: Math.random() * 0.7 + 0.3,
+      speed: Math.random() * 0.2 + 0.05
+    });
+  }
+
+  function render() {
+    ctx.clearRect(0, 0, w, h);
+    for (let i = 0; i < stars.length; i++) {
+      const s = stars[i];
+      s.y -= s.speed;
+      if (s.y < 0) s.y = h;
+
+      ctx.fillStyle = `rgba(255, 32, 78, ${s.alpha * 0.4})`;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Occasional faint cyan twinkle
+      if (i % 3 === 0) {
+        ctx.fillStyle = `rgba(0, 229, 255, ${s.alpha * 0.5})`;
+        ctx.fillRect(s.x + 2, s.y, 1, 1);
+      }
+    }
+    requestAnimationFrame(render);
+  }
+  render();
+}
+
+// --- BOOT SEQUENCE ---
+function runBootSequence() {
+  const boot = document.getElementById('boot');
+  const bar = document.getElementById('bootBar');
+  const text = document.getElementById('bootText');
+  if (!boot) return;
+
+  const steps = [
+    { pct: 25, txt: "INGESTING 15 CLINICAL PHENOTYPES..." },
+    { pct: 55, txt: "CALIBRATING TF-IDF N-GRAM TENSORS..." },
+    { pct: 85, txt: "SYNCHRONIZING MULTINOMIAL WEIGHTS..." },
+    { pct: 100, txt: "DIAGNOSTIC MATRIX ONLINE." }
+  ];
+
+  let current = 0;
+  const interval = setInterval(() => {
+    if (current < steps.length) {
+      bar.style.width = steps[current].pct + '%';
+      text.innerText = steps[current].txt;
+      playBeep(600 + current * 120, 'sine', 0.03, 0.03);
+      current++;
     } else {
-        // Logged Out
-        authDiv.innerHTML = `
-            <a href="/auth/login" class="bg-white text-gray-900 hover:bg-gray-100 px-5 py-2 rounded-lg font-medium transition shadow-lg">
-                Sign In
-            </a>
-        `;
-        subContainer.innerHTML = `<p class="text-sm text-center text-gray-500 italic">Sign in to upgrade</p>`;
+      clearInterval(interval);
+      setTimeout(() => {
+        boot.classList.add('off');
+        addLog("KERNEL", "MED-OS Core initialized successfully.", "ok");
+      }, 350);
     }
+  }, 220);
 }
 
-async function diagnose() {
-    const symptoms = document.getElementById('symptoms').value;
-    if (!symptoms) return alert("Please enter symptoms.");
+// --- TAB SWITCHING ---
+function initTabs() {
+  const tabs = document.querySelectorAll('.hud-tab');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      playBeep(920, 'sine', 0.04, 0.04);
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
 
-    const btn = document.querySelector('button[onclick="diagnose()"]');
-    const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
-    btn.disabled = true;
+      const targetId = tab.getAttribute('data-tab');
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+      const targetPane = document.getElementById(targetId);
+      if (targetPane) targetPane.classList.add('active');
 
-    try {
-        const res = await fetch('/api/diagnose', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({symptoms})
+      addLog("NAV", `Switched view mode to [${targetId.toUpperCase()}]`);
+    });
+  });
+}
+
+// --- GLOBAL MODEL METADATA STORE ---
+let modelArchitectureData = null;
+
+async function fetchModelArchitecture() {
+  try {
+    const res = await fetch('/api/model/architecture');
+    const data = await res.json();
+    if (data.status === 'success') {
+      modelArchitectureData = data;
+      renderModelAtlas(data);
+      if (data.model_overview) {
+        document.getElementById('engineName').innerText = `${data.model_overview.classifier_type} (${data.model_overview.regularization})`;
+        document.getElementById('topAccuracy').innerText = `${data.model_overview.training_accuracy}%`;
+      }
+      addLog("MODEL", "Loaded comprehensive model telemetry and biomarker atlas.", "ok");
+    }
+  } catch (e) {
+    console.error("Architecture fetch error:", e);
+    addLog("MODEL", `Failed retrieving architecture specs: ${e.message}`, "err");
+  }
+}
+
+function renderModelAtlas(data) {
+  const listNav = document.getElementById('diseaseListNav');
+  if (!listNav || !data.disease_biomarkers) return;
+
+  listNav.innerHTML = '';
+  const diseases = Object.keys(data.disease_biomarkers).sort();
+
+  diseases.forEach((dis, idx) => {
+    const btn = document.createElement('button');
+    btn.className = `disease-nav-item ${idx === 0 ? 'active' : ''}`;
+    btn.innerHTML = `<span>${dis}</span> <small style="color:var(--tx2);">â–¸</small>`;
+    btn.onclick = () => {
+      playBeep(800, 'sine', 0.03, 0.03);
+      document.querySelectorAll('.disease-nav-item').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      showDiseaseProfile(dis, data);
+    };
+    listNav.appendChild(btn);
+  });
+
+  if (diseases.length > 0) {
+    showDiseaseProfile(diseases[0], data);
+  }
+}
+
+function showDiseaseProfile(diseaseName, data) {
+  const title = document.getElementById('atlasDiseaseName');
+  const urgency = document.getElementById('atlasUrgency');
+  const tbody = document.getElementById('biomarkerTableBody');
+  if (!title || !tbody) return;
+
+  title.innerText = diseaseName;
+  const biomarkers = data.disease_biomarkers[diseaseName] || [];
+
+  tbody.innerHTML = '';
+  biomarkers.forEach(b => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><span class="token-chip pos">${b.term}</span></td>
+      <td style="font-family:'Share Tech Mono',monospace; color:var(--red); font-weight:700;">+${b.coefficient}</td>
+      <td style="color:var(--emerald);">Positive Predictive Indicator</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Urgency indicator heuristics
+  if (['Heart Disease', 'COVID-19', 'Pneumonia'].includes(diseaseName)) {
+    urgency.innerText = "CRITICAL / URGENT";
+    urgency.style.borderColor = "var(--red)";
+    urgency.style.color = "var(--red)";
+  } else if (['Asthma', 'Kidney Stones', 'Migraine'].includes(diseaseName)) {
+    urgency.innerText = "HIGH PRIORITY";
+    urgency.style.borderColor = "var(--amber)";
+    urgency.style.color = "var(--amber)";
+  } else {
+    urgency.innerText = "ROUTINE CLINICAL";
+    urgency.style.borderColor = "var(--emerald)";
+    urgency.style.color = "var(--emerald)";
+  }
+}
+
+// --- DIAGNOSIS EXECUTION ---
+async function runDiagnosis() {
+  const input = document.getElementById('symptoms');
+  const symptoms = input.value.trim();
+  if (!symptoms) {
+    playBeep(320, 'sawtooth', 0.1, 0.08);
+    alert("Please enter patient clinical presentation or symptoms.");
+    return;
+  }
+
+  playScanSound();
+  const btn = document.getElementById('btnDiagnose');
+  const origHtml = btn.innerHTML;
+  btn.innerHTML = `<span>PROCESSING TENSORS...</span> <i>âŒ›</i>`;
+  btn.disabled = true;
+
+  document.getElementById('resStatusBadge').innerText = "CALCULATING PROBABILITIES...";
+  addLog("INFERENCE", `Triggered forward pass for: "${symptoms.substring(0, 40)}..."`);
+
+  try {
+    const res = await fetch('/api/diagnose', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ symptoms })
+    });
+
+    const data = await res.json();
+    if (data.status === 'error') {
+      alert(data.error);
+      addLog("ERROR", data.error, "err");
+      return;
+    }
+
+    renderDiagnosisResults(data);
+    addLog("RESULT", `Diagnosed [${data.primary_diagnosis}] with ${data.confidence}% confidence in ${data.inference_time_ms}ms`, "ok");
+    document.getElementById('topLatency').innerText = `${data.inference_time_ms}ms`;
+  } catch (err) {
+    console.error("Diagnosis error:", err);
+    alert("Communication failure with inference server.");
+    addLog("ERROR", err.message, "err");
+  } finally {
+    btn.innerHTML = origHtml;
+    btn.disabled = false;
+  }
+}
+
+function renderDiagnosisResults(data) {
+  document.getElementById('result-idle').hidden = true;
+  const resultArea = document.getElementById('result-area');
+  resultArea.hidden = false;
+
+  const verdictBanner = document.getElementById('verdictBanner');
+  const diagText = document.getElementById('diagnosis-text');
+  const confText = document.getElementById('confidence');
+  const gaugeFill = document.getElementById('gaugeFill');
+  const urgencyBadge = document.getElementById('urgencyBadge');
+
+  diagText.innerText = data.primary_diagnosis;
+  confText.innerText = `${data.confidence.toFixed(1)}%`;
+  gaugeFill.style.width = `${Math.min(data.confidence, 100)}%`;
+
+  // Urgency styling
+  const urgency = (data.urgency_level || 'routine').toLowerCase();
+  verdictBanner.className = 'verdict-banner ' + urgency;
+  urgencyBadge.innerText = (data.urgency_level || 'ROUTINE');
+
+  if (urgency === 'urgent' || urgency === 'critical') {
+    urgencyBadge.style.borderColor = 'var(--red)';
+    urgencyBadge.style.color = 'var(--red)';
+  } else if (urgency === 'within24hours') {
+    urgencyBadge.style.borderColor = 'var(--amber)';
+    urgencyBadge.style.color = 'var(--amber)';
+  } else {
+    urgencyBadge.style.borderColor = 'var(--emerald)';
+    urgencyBadge.style.color = 'var(--emerald)';
+  }
+
+  // Differential Probabilities
+  const diffList = document.getElementById('diffList');
+  diffList.innerHTML = '';
+  (data.top_predictions || []).forEach(p => {
+    const item = document.createElement('div');
+    item.className = 'diff-item';
+    item.innerHTML = `
+      <div class="diff-row">
+        <span>${p.disease}</span>
+        <b style="color:${p.disease === data.primary_diagnosis ? 'var(--red)' : 'var(--cyan)'};">${p.probability.toFixed(1)}%</b>
+      </div>
+      <div class="diff-bar">
+        <div class="diff-fill" style="width: ${p.probability}%; background:${p.disease === data.primary_diagnosis ? 'var(--red)' : 'var(--cyan)'};"></div>
+      </div>
+    `;
+    diffList.appendChild(item);
+  });
+
+  // Token Attributions
+  const tokenWrap = document.getElementById('tokenAttributions');
+  tokenWrap.innerHTML = '';
+  if (data.token_attributions && data.token_attributions.length > 0) {
+    data.token_attributions.forEach(t => {
+      const chip = document.createElement('span');
+      chip.className = `token-chip ${t.direction === 'supports' ? 'pos' : 'neg'}`;
+      chip.innerHTML = `<b>${t.term}</b> <small>${t.weight > 0 ? '+' : ''}${t.weight}</small>`;
+      chip.title = `TF-IDF: ${t.tfidf_score} | Coef: ${t.class_coef}`;
+      tokenWrap.appendChild(chip);
+    });
+  } else {
+    tokenWrap.innerHTML = `<span style="color:var(--tx2); font-size:11px;">Generalized symptom distribution without isolated high-weight outlier terms.</span>`;
+  }
+
+  // Pharmacotherapy & Clinical Protocol
+  const medList = document.getElementById('medList');
+  const treatList = document.getElementById('treatList');
+  medList.innerHTML = '';
+  treatList.innerHTML = '';
+
+  const meds = (data.disease_info && data.disease_info.common_medicines) || ['Consult attending physician'];
+  meds.forEach(m => {
+    const li = document.createElement('li');
+    li.innerText = m;
+    medList.appendChild(li);
+  });
+
+  const treats = (data.disease_info && data.disease_info.common_treatments) || ['Routine bed rest and vital monitoring'];
+  treats.forEach(t => {
+    const li = document.createElement('li');
+    li.innerText = t;
+    treatList.appendChild(li);
+  });
+
+  // Triage Recommendations
+  const recList = document.getElementById('rec-list');
+  recList.innerHTML = '';
+  (data.recommendation || []).forEach(r => {
+    const li = document.createElement('li');
+    li.innerText = r;
+    recList.appendChild(li);
+  });
+
+  document.getElementById('resStatusBadge').innerText = "INFERENCE COMPLETED";
+}
+
+// --- PRESET CLICK HANDLERS ---
+function initPresets() {
+  document.querySelectorAll('.preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      playBeep(750, 'sine', 0.04, 0.05);
+      const symptomText = btn.getAttribute('data-symptom');
+      const textarea = document.getElementById('symptoms');
+      textarea.value = symptomText;
+      updateCharCount();
+      addLog("INGEST", `Injected clinical preset sampler.`);
+      runDiagnosis();
+    });
+  });
+}
+
+function updateCharCount() {
+  const val = document.getElementById('symptoms').value;
+  document.getElementById('charCounter').innerText = `${val.length} CHARS`;
+}
+
+// --- STATUS BAR UTC TIME ---
+function startUtcClock() {
+  function update() {
+    const now = new Date();
+    const utc = now.toISOString().substring(11, 19) + ' UTC';
+    const el = document.getElementById('utcTime');
+    if (el) el.innerText = utc;
+  }
+  update();
+  setInterval(update, 1000);
+}
+
+// --- USER & AUTH UI ---
+async function initUserConfig() {
+  try {
+    const res = await fetch('/api/config');
+    const data = await res.json();
+    renderAuthSection(data.user);
+  } catch (e) {
+    renderAuthSection(null);
+  }
+}
+
+function renderAuthSection(user) {
+  const authDiv = document.getElementById('auth-section');
+  const subContainer = document.getElementById('sub-btn-container');
+
+  if (user) {
+    authDiv.innerHTML = `
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span class="chip">OPERATOR: <b>${user.name || 'PHYSICIAN'}</b></span>
+        ${user.is_admin ? '<a href="/admin" class="hud" style="color:var(--amber); border-color:var(--amber);">ADMIN</a>' : ''}
+        <a href="/auth/logout" class="hud" style="color:var(--red);">LOGOUT</a>
+      </div>
+    `;
+
+    if (user.is_pro) {
+      subContainer.innerHTML = `<span class="hud emerald">PRO ACTIVE</span>`;
+    } else {
+      subContainer.innerHTML = `<button class="hud fill" onclick="openSubModal()">UPGRADE PRO (&#8377;499)</button>`;
+    }
+  } else {
+    authDiv.innerHTML = `
+      <a href="/auth/login" class="hud fill">CLINICAL SIGN IN</a>
+    `;
+    subContainer.innerHTML = `<button class="hud" onclick="openSubModal()">PRO SUBSCRIPTION</button>`;
+  }
+}
+
+function openSubModal() {
+  playBeep(850, 'sine', 0.04, 0.05);
+  const modal = document.getElementById('subModal');
+  if (modal) modal.showModal();
+}
+
+async function executeSubscription() {
+  try {
+    const res = await fetch('/api/create_subscription', { method: 'POST' });
+    const data = await res.json();
+    if (data.error) {
+      alert("Please sign in first to subscribe: " + data.error);
+      return;
+    }
+
+    const options = {
+      key: data.key,
+      amount: data.amount,
+      currency: "INR",
+      name: "MED-OS CLINICAL MATRIX",
+      description: "Pro Tier Access",
+      order_id: data.order_id,
+      handler: async function (response) {
+        const verifyRes = await fetch('/api/verify_payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(response)
         });
-
-        if (res.status === 401) {
-            alert("Please Sign In first.");
-            window.location.href = '/auth/login';
-            return;
+        const vData = await verifyRes.json();
+        if (vData.success) {
+          alert("MED-OS Pro Matrix Activated!");
+          window.location.reload();
+        } else {
+          alert("Verification failed: " + vData.error);
         }
-
-        const data = await res.json();
-        
-        document.getElementById('result-area').classList.remove('hidden');
-        document.getElementById('diagnosis-text').innerText = data.primary_diagnosis;
-        document.getElementById('confidence').innerText = (data.confidence * 100).toFixed(1) + "% Confidence";
-        
-        const list = document.getElementById('rec-list');
-        list.innerHTML = '';
-        data.recommendation.forEach(rec => {
-            list.innerHTML += `<li>${rec}</li>`;
-        });
-
-    } catch (e) {
-        alert("Error analyzing symptoms.");
-    } finally {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-    }
+      }
+    };
+    const rzp = new Razorpay(options);
+    rzp.open();
+  } catch (e) {
+    alert("Subscription checkout error: " + e.message);
+  }
 }
 
-async function subscribe() {
-    try {
-        const res = await fetch('/api/create_subscription', {method: 'POST'});
-        const data = await res.json();
+// --- INITIALIZATION ---
+window.addEventListener('DOMContentLoaded', () => {
+  initStarfield();
+  runBootSequence();
+  initTabs();
+  initPresets();
+  startUtcClock();
+  fetchModelArchitecture();
+  initUserConfig();
 
-        const options = {
-            key: data.key,
-            amount: data.amount,
-            currency: "INR",
-            name: "MediAI Pro",
-            description: "Pro Subscription",
-            order_id: data.order_id,
-            handler: async function (response) {
-                await fetch('/api/verify_payment', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(response)
-                });
-                alert("Subscription Active!");
-                location.reload();
-            },
-            theme: { color: "#6366f1" }
-        };
-        new Razorpay(options).open();
-    } catch (e) {
-        alert("Payment initialization failed.");
+  // Button Listeners
+  document.getElementById('btnDiagnose').onclick = runDiagnosis;
+  document.getElementById('btnClear').onclick = () => {
+    document.getElementById('symptoms').value = '';
+    updateCharCount();
+  };
+  document.getElementById('symptoms').oninput = updateCharCount;
+
+  // Audio Toggle
+  const audioBtn = document.getElementById('btnAudioToggle');
+  audioBtn.onclick = () => {
+    soundEnabled = !soundEnabled;
+    audioBtn.innerHTML = `AUDIO: <b>${soundEnabled ? 'ON' : 'OFF'}</b>`;
+    if (soundEnabled) {
+      initAudio();
+      playBeep(990, 'sine', 0.06, 0.06);
     }
-}
+  };
 
-init();
+  // Logs Drawer Toggle
+  const logDrawer = document.getElementById('logDrawer');
+  document.getElementById('btnLogsToggle').onclick = () => {
+    playBeep(700, 'sine', 0.03, 0.03);
+    logDrawer.classList.toggle('open');
+  };
+  document.getElementById('btnCloseLogs').onclick = () => {
+    logDrawer.classList.remove('open');
+  };
+  document.getElementById('btnClearLogs').onclick = () => {
+    document.getElementById('logContent').innerHTML = '';
+  };
+
+  document.getElementById('btnExecuteSub').onclick = executeSubscription;
+});

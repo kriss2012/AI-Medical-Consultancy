@@ -7,7 +7,7 @@ from flask_login import LoginManager, login_user, logout_user, current_user, log
 from werkzeug.middleware.proxy_fix import ProxyFix 
 import razorpay
 from models import db, User, Payment, Consultation
-from medical_model import medical_diagnosis
+from medical_model import medical_diagnosis, get_model_architecture_details
 
 # --- LOAD ENV ---
 load_dotenv()
@@ -121,12 +121,15 @@ def logout():
 
 # --- MEDICAL API ---
 
+@app.route('/api/model/architecture', methods=['GET'])
+def model_architecture():
+    """Returns deep neural and mathematical telemetry of the diagnosis model"""
+    details = get_model_architecture_details()
+    return jsonify(details)
+
 @app.route('/api/diagnose', methods=['POST'])
 def diagnose():
-    if not current_user.is_authenticated:
-        return jsonify({'error': 'Please login first'}), 401
-    
-    data = request.json
+    data = request.json or {}
     symptoms = data.get('symptoms', '').strip()
     
     if not symptoms:
@@ -134,17 +137,45 @@ def diagnose():
 
     result = medical_diagnosis(symptoms)
     
-    # Save History
-    cons = Consultation(
-        user_id=current_user.id,
-        symptoms=symptoms,
-        diagnosis=result.get('primary_diagnosis'),
-        confidence=result.get('confidence')
-    )
-    db.session.add(cons)
-    db.session.commit()
+    # Save History if user is authenticated
+    if current_user.is_authenticated:
+        try:
+            cons = Consultation(
+                user_id=current_user.id,
+                symptoms=symptoms,
+                diagnosis=result.get('primary_diagnosis'),
+                confidence=result.get('confidence')
+            )
+            db.session.add(cons)
+            db.session.commit()
+            result['authenticated'] = True
+            result['saved_to_history'] = True
+        except Exception as e:
+            result['authenticated'] = True
+            result['saved_to_history'] = False
+            result['db_warning'] = str(e)
+    else:
+        result['authenticated'] = False
+        result['saved_to_history'] = False
     
     return jsonify(result)
+
+@app.route('/api/consultations', methods=['GET'])
+@login_required
+def get_consultations():
+    """Return historical diagnostic consultations for authenticated user"""
+    history = Consultation.query.filter_by(user_id=current_user.id).order_by(Consultation.id.desc()).limit(15).all()
+    return jsonify({
+        'consultations': [
+            {
+                'id': c.id,
+                'symptoms': c.symptoms,
+                'diagnosis': c.diagnosis,
+                'confidence': c.confidence
+            }
+            for c in history
+        ]
+    })
 
 # --- PAYMENT API ---
 
