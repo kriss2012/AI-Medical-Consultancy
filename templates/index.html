@@ -12,6 +12,9 @@
 </head>
 <body>
 
+  <!-- Custom Targeting Reticle Cursor -->
+  <div id="ret"></div>
+
   <!-- Deep Space Starfield & Halo Canvas -->
   <canvas id="spaceCanvas"></canvas>
   <div class="grid-overlay"></div>
@@ -303,8 +306,18 @@
         </div>
 
         <p style="color: var(--tx2); font-size: 11px;">
-          Select any of the 15 conditions below to inspect its mathematical feature coefficients (\(w_{c, j}\)) and clinical triage profile stored in the trained model.
+          Select or drag through any of the 15 conditions in the 3D cylindrical stage or list below to inspect its mathematical feature coefficients (\(w_{c, j}\)) and clinical triage profile stored in the trained model.
         </p>
+
+        <!-- 3D Cylindrical Stage -->
+        <div class="carousel-controls">
+          <button class="hud" id="btnPrevCard"><i>â—€</i> PREV CONDITION</button>
+          <span class="chip" style="color:var(--tx2);">3D DRAG / ROTATION STAGE &bull; CLICK ANY SLATE TO FOCUS</span>
+          <button class="hud" id="btnNextCard">NEXT CONDITION <i>â–¶</i></button>
+        </div>
+        <div class="stage-container" id="stageContainer">
+          <div class="cards-ring" id="cardsRing"></div>
+        </div>
 
         <div class="biomarker-explorer">
           <!-- Left: Disease List -->
@@ -351,6 +364,79 @@
       <div class="log-line"><span class="ts">[MODEL]</span> <span class="tag">WEIGHTS</span> <span class="ok">TF-IDF & Logistic Regression matrices loaded into memory.</span></div>
     </div>
   </div>
+
+  <!-- Cyber HUD Operator Authentication Modal -->
+  <dialog id="authModal">
+    <div class="hud-modal">
+      <div class="presets-lbl" style="color: var(--cyan);">SECURITY PROTOCOL // OPERATOR AUTHENTICATION</div>
+      <h3>MED-OS ACCESS CONTROL</h3>
+      <p style="color: var(--tx2); font-size: 11px; margin-bottom: 14px; line-height: 1.5;">
+        Select an instant 1-click verification tier, enroll a new clinical operator, or authenticate via email & passkey.
+      </p>
+
+      <!-- 1-Click Instant Demo Options -->
+      <div style="background: rgba(14, 20, 29, 0.75); border: 1px solid var(--bd); padding: 12px; margin-bottom: 14px;">
+        <span class="presets-lbl" style="color: var(--emerald); display: block; margin-bottom: 8px;">FAST DIRECT ACCESS (1-CLICK INSTANT PASS):</span>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button class="hud emerald" id="btnDemoDoctor" style="flex: 1; justify-content: center;">
+            <span>âš•ï¸  PHYSICIAN (PRO)</span>
+          </button>
+          <button class="hud" id="btnDemoAdmin" style="flex: 1; justify-content: center; color: var(--amber); border-color: var(--amber);">
+            <span>ðŸ›¡ï¸  ADMINISTRATOR</span>
+          </button>
+          <button class="hud" id="btnDemoPractitioner" style="flex: 1; justify-content: center;">
+            <span>ðŸ”¬ PRACTITIONER</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Auth Modality Tabs (Sign In vs Register) -->
+      <div style="display: flex; gap: 8px; margin-bottom: 12px; border-bottom: 1px solid var(--bd); padding-bottom: 8px;">
+        <button class="hud fill" id="tabSignInBtn" style="flex: 1; justify-content: center;">SIGN IN</button>
+        <button class="hud" id="tabRegisterBtn" style="flex: 1; justify-content: center;">REGISTER OPERATOR</button>
+      </div>
+
+      <!-- Sign In Form -->
+      <div id="authSignInPane">
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div>
+            <label class="presets-lbl">OPERATOR EMAIL:</label>
+            <input type="email" id="authEmail" class="hud" style="width: 100%; text-transform: none; font-size: 12px; background: rgba(4, 7, 12, 0.9);" placeholder="operator@clinical.ai">
+          </div>
+          <div>
+            <label class="presets-lbl">SECURITY PASSKEY:</label>
+            <input type="password" id="authPassword" class="hud" style="width: 100%; text-transform: none; font-size: 12px; background: rgba(4, 7, 12, 0.9);" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;">
+          </div>
+          <button class="hud fill" id="btnSubmitLogin" style="margin-top: 8px; justify-content: center;">AUTHENTICATE OPERATOR &rarr;</button>
+        </div>
+      </div>
+
+      <!-- Register Form -->
+      <div id="authRegisterPane" hidden>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div>
+            <label class="presets-lbl">OPERATOR NAME / TITLE:</label>
+            <input type="text" id="regName" class="hud" style="width: 100%; text-transform: none; font-size: 12px; background: rgba(4, 7, 12, 0.9);" placeholder="Dr. Jane Doe">
+          </div>
+          <div>
+            <label class="presets-lbl">OPERATOR EMAIL:</label>
+            <input type="email" id="regEmail" class="hud" style="width: 100%; text-transform: none; font-size: 12px; background: rgba(4, 7, 12, 0.9);" placeholder="jane.doe@clinical.ai">
+          </div>
+          <div>
+            <label class="presets-lbl">SECURITY PASSKEY:</label>
+            <input type="password" id="regPassword" class="hud" style="width: 100%; text-transform: none; font-size: 12px; background: rgba(4, 7, 12, 0.9);" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;">
+          </div>
+          <button class="hud fill" id="btnSubmitRegister" style="margin-top: 8px; justify-content: center; background: var(--cyan); border-color: var(--cyan); color: #000;">ENROLL OPERATOR &rarr;</button>
+        </div>
+      </div>
+
+      <!-- Optional Google OAuth Link -->
+      <div style="margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--bd); display: flex; align-items: center; justify-content: space-between;">
+        <a href="/auth/login" class="chip" style="color: var(--tx2); text-decoration: underline;">OR AUTHENTICATE VIA GOOGLE OAUTH</a>
+        <button class="hud" onclick="document.getElementById('authModal').close()">CANCEL</button>
+      </div>
+    </div>
+  </dialog>
 
   <!-- Subscription Modal -->
   <dialog id="subModal">

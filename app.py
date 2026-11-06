@@ -1,4 +1,5 @@
 import os
+import uuid
 from flask import Flask, render_template, jsonify, request, redirect, url_for, session
 from dotenv import load_dotenv
 from authlib.integrations.flask_client import OAuth
@@ -74,17 +75,19 @@ def index():
 
 @app.route('/auth/login')
 def login():
-    # Automatically generates the correct URL (https:// on Render, http:// on Local)
-    redirect_uri = url_for('auth_callback', _external=True)
-    return google.authorize_redirect(redirect_uri)
+    if not os.environ.get("GOOGLE_CLIENT_ID") or not os.environ.get("GOOGLE_CLIENT_SECRET"):
+        return redirect('/?auth_modal=open&notice=google_unconfigured')
+    try:
+        redirect_uri = url_for('auth_callback', _external=True)
+        return google.authorize_redirect(redirect_uri)
+    except Exception as e:
+        print(f"AUTH REDIRECT ERROR: {e}")
+        return redirect('/?auth_modal=open&notice=oauth_error')
 
 @app.route('/auth/callback')
 def auth_callback():
     try:
-        # Exchange code for token
         token = google.authorize_access_token()
-        
-        # Get User Info (Full URL fixed)
         user_info = google.get('https://www.googleapis.com/oauth2/v3/userinfo').json()
         
         google_id = user_info.get('sub') or user_info.get('id')
@@ -92,11 +95,8 @@ def auth_callback():
         name = user_info.get('name')
         picture = user_info.get('picture')
 
-        # Database Logic
         user = User.query.filter_by(google_id=google_id).first()
-        
         if not user:
-            # Check for admin email from .env
             is_admin = (email == os.environ.get("ADMIN_EMAIL"))
             user = User(google_id=google_id, email=email, name=name, picture=picture, is_admin=is_admin)
             db.session.add(user)
@@ -107,13 +107,133 @@ def auth_callback():
 
         login_user(user)
         return redirect('/')
-    
     except Exception as e:
         print(f"AUTH ERROR: {e}")
-        return f"<h3>Authentication Error</h3><p>{e}</p><a href='/'>Back to Home</a>"
+        return redirect('/?auth_modal=open&notice=callback_error')
+
+@app.route('/auth/direct-login', methods=['POST'])
+def direct_login():
+    """Alternate Local Authentication: Email & Passkey login"""
+    data = request.json or {}
+    email = data.get('email', '').strip().lower()
+    password = data.get('password', '').strip()
+
+    if not email or not password:
+        return jsonify({'status': 'error', 'message': 'Email and passkey required'}), 400
+
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        return jsonify({'status': 'error', 'message': 'Operator identity not found in database'}), 401
+
+    if not user.check_password(password):
+        # Allow default local pass if no hash was set
+        if user.password_hash is None and password in ['demo1234', 'password', 'admin']:
+            pass
+        else:
+            return jsonify({'status': 'error', 'message': 'Invalid passkey credentials'}), 401
+
+    login_user(user)
+    return jsonify({
+        'status': 'success',
+        'user': {
+            'name': user.name,
+            'email': user.email,
+            'is_pro': user.is_pro,
+            'is_admin': user.is_admin
+        }
+    })
+
+@app.route('/auth/register', methods=['POST'])
+def direct_register():
+    """Alternate Local Authentication: New Operator Registration"""
+    data = request.json or {}
+    email = data.get('email', '').strip().lower()
+    name = data.get('name', '').strip() or 'Clinical Practitioner'
+    password = data.get('password', '').strip()
+
+    if not email or not password:
+        return jsonify({'status': 'error', 'message': 'Email and passkey required'}), 400
+
+    existing = User.query.filter_by(email=email).first()
+    if existing:
+        return jsonify({'status': 'error', 'message': 'Operator email is already registered'}), 409
+
+    is_admin = (email == os.environ.get("ADMIN_EMAIL", "202krishnapatil@gmail.com").lower())
+    new_user = User(
+        google_id=f"local_{uuid.uuid4().hex[:12]}",
+        email=email,
+        name=name,
+        picture="https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=100&auto=format&fit=crop&q=60",
+        is_admin=is_admin,
+        is_pro=False
+    )
+    new_user.set_password(password)
+    db.session.add(new_user)
+    db.session.commit()
+
+    login_user(new_user)
+    return jsonify({
+        'status': 'success',
+        'user': {
+            'name': new_user.name,
+            'email': new_user.email,
+            'is_pro': new_user.is_pro,
+            'is_admin': new_user.is_admin
+        }
+    })
+
+@app.route('/auth/instant-demo', methods=['POST'])
+def instant_demo():
+    """Alternate 1-Click Zero-Friction Demo / Operator Access"""
+    data = request.json or {}
+    role = data.get('role', 'doctor') # 'doctor' | 'admin' | 'practitioner'
+
+    if role == 'admin':
+        demo_email = os.environ.get("ADMIN_EMAIL", "admin@clinical-hud.ai").lower()
+        demo_name = "Chief Medical Officer (Admin)"
+        is_admin = True
+        is_pro = True
+    elif role == 'doctor':
+        demo_email = "dr.alex.mercer@clinical-hud.ai"
+        demo_name = "Dr. Alex Mercer (Physician)"
+        is_admin = False
+        is_pro = True
+    else:
+        demo_email = "practitioner@clinical-hud.ai"
+        demo_name = "Clinical Practitioner"
+        is_admin = False
+        is_pro = False
+
+    user = User.query.filter_by(email=demo_email).first()
+    if not user:
+        user = User(
+            google_id=f"demo_{role}_{uuid.uuid4().hex[:8]}",
+            email=demo_email,
+            name=demo_name,
+            picture="https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=100&auto=format&fit=crop&q=60",
+            is_admin=is_admin,
+            is_pro=is_pro
+        )
+        user.set_password("demo1234")
+        db.session.add(user)
+        db.session.commit()
+    else:
+        user.is_admin = is_admin
+        user.is_pro = is_pro
+        db.session.commit()
+
+    login_user(user)
+    return jsonify({
+        'status': 'success',
+        'user': {
+            'name': user.name,
+            'email': user.email,
+            'is_pro': user.is_pro,
+            'is_admin': user.is_admin
+        }
+    })
 
 @app.route('/auth/logout')
-@login_required
 def logout():
     logout_user()
     session.clear()

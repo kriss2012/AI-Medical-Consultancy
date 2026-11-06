@@ -213,6 +213,7 @@ function renderModelAtlas(data) {
 
   if (diseases.length > 0) {
     showDiseaseProfile(diseases[0], data);
+    initCarousel3D(diseases, data);
   }
 }
 
@@ -457,9 +458,139 @@ function renderAuthSection(user) {
     }
   } else {
     authDiv.innerHTML = `
-      <a href="/auth/login" class="hud fill">CLINICAL SIGN IN</a>
+      <button class="hud fill" onclick="openAuthModal()">CLINICAL SIGN IN</button>
     `;
     subContainer.innerHTML = `<button class="hud" onclick="openSubModal()">PRO SUBSCRIPTION</button>`;
+  }
+}
+
+function openAuthModal() {
+  playBeep(850, 'sine', 0.04, 0.05);
+  const modal = document.getElementById('authModal');
+  if (modal) modal.showModal();
+}
+
+function initAuthHandlers() {
+  // Tab toggle between Sign In & Register
+  const btnTabSign = document.getElementById('tabSignInBtn');
+  const btnTabReg = document.getElementById('tabRegisterBtn');
+  const paneSign = document.getElementById('authSignInPane');
+  const paneReg = document.getElementById('authRegisterPane');
+
+  if (btnTabSign && btnTabReg) {
+    btnTabSign.onclick = () => {
+      playBeep(800, 'sine', 0.03, 0.03);
+      btnTabSign.classList.add('fill');
+      btnTabReg.classList.remove('fill');
+      paneSign.hidden = false;
+      paneReg.hidden = true;
+    };
+    btnTabReg.onclick = () => {
+      playBeep(800, 'sine', 0.03, 0.03);
+      btnTabReg.classList.add('fill');
+      btnTabSign.classList.remove('fill');
+      paneSign.hidden = true;
+      paneReg.hidden = false;
+    };
+  }
+
+  // 1-Click Instant Demo Logins
+  const triggerDemo = async (role) => {
+    playScanSound();
+    addLog("AUTH", `Initiating 1-click instant authentication: role [${role.toUpperCase()}]`);
+    try {
+      const res = await fetch('/auth/instant-demo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role })
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        addLog("AUTH", `Authenticated as ${data.user.name} (${data.user.email})`, "ok");
+        document.getElementById('authModal').close();
+        renderAuthSection(data.user);
+      } else {
+        alert(data.message || "Authentication failed");
+      }
+    } catch (e) {
+      alert("Demo auth error: " + e.message);
+    }
+  };
+
+  const bDoc = document.getElementById('btnDemoDoctor');
+  if (bDoc) bDoc.onclick = () => triggerDemo('doctor');
+  const bAdm = document.getElementById('btnDemoAdmin');
+  if (bAdm) bAdm.onclick = () => triggerDemo('admin');
+  const bPrac = document.getElementById('btnDemoPractitioner');
+  if (bPrac) bPrac.onclick = () => triggerDemo('practitioner');
+
+  // Submit Direct Login
+  const btnSubmitLogin = document.getElementById('btnSubmitLogin');
+  if (btnSubmitLogin) {
+    btnSubmitLogin.onclick = async () => {
+      const email = document.getElementById('authEmail').value.trim();
+      const password = document.getElementById('authPassword').value.trim();
+      if (!email || !password) {
+        alert("Please enter operator email and passkey.");
+        return;
+      }
+      playScanSound();
+      try {
+        const res = await fetch('/auth/direct-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+          addLog("AUTH", `Successfully verified operator: ${data.user.email}`, "ok");
+          document.getElementById('authModal').close();
+          renderAuthSection(data.user);
+        } else {
+          alert(data.message || "Invalid credentials");
+        }
+      } catch (e) {
+        alert("Login error: " + e.message);
+      }
+    };
+  }
+
+  // Submit Direct Register
+  const btnSubmitRegister = document.getElementById('btnSubmitRegister');
+  if (btnSubmitRegister) {
+    btnSubmitRegister.onclick = async () => {
+      const name = document.getElementById('regName').value.trim();
+      const email = document.getElementById('regEmail').value.trim();
+      const password = document.getElementById('regPassword').value.trim();
+      if (!email || !password) {
+        alert("Please provide operator email and passkey.");
+        return;
+      }
+      playScanSound();
+      try {
+        const res = await fetch('/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, password })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+          addLog("AUTH", `Enrolled new operator: ${data.user.name}`, "ok");
+          document.getElementById('authModal').close();
+          renderAuthSection(data.user);
+        } else {
+          alert(data.message || "Registration failed");
+        }
+      } catch (e) {
+        alert("Registration error: " + e.message);
+      }
+    };
+  }
+
+  // Auto-open modal if redirected with notice
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('auth_modal') === 'open') {
+    openAuthModal();
   }
 }
 
@@ -507,15 +638,208 @@ async function executeSubscription() {
   }
 }
 
+// --- 3D CYLINDRICAL STAGE CAROUSEL ---
+let carouselRotation = 0;
+let carouselDiseases = [];
+let carouselRadius = 540;
+let isDraggingCarousel = false;
+let startXCarousel = 0;
+let currentRotationAtDrag = 0;
+
+function initCarousel3D(diseases, data) {
+  carouselDiseases = diseases;
+  const ring = document.getElementById('cardsRing');
+  const stage = document.getElementById('stageContainer');
+  if (!ring || !stage || diseases.length === 0) return;
+
+  ring.innerHTML = '';
+  const count = diseases.length;
+  const step = 360 / count;
+
+  diseases.forEach((dis, i) => {
+    const card = document.createElement('div');
+    card.className = 'carousel-card';
+    card.setAttribute('data-index', i);
+
+    const biomarkers = (data.disease_biomarkers[dis] || []).slice(0, 3).map(b => b.term).join(', ');
+    const numStr = String(i + 1).padStart(2, '0');
+
+    card.innerHTML = `
+      <div class="c-num">
+        <span>${numStr}</span>
+        <small class="hud" style="font-size:8px; padding:1px 6px;">CLINICAL</small>
+      </div>
+      <h3>${dis}</h3>
+      <p style="color:var(--tx2); font-size:10px; margin:2px 0; max-height:28px; overflow:hidden;">Biomarkers: ${biomarkers || 'Clinical symptoms'}</p>
+      <div class="c-meta">
+        <span>TRAINED MATRIX</span>
+        <b style="color:var(--cyan);">100% CV ACC</b>
+      </div>
+    `;
+
+    card.onclick = (e) => {
+      e.stopPropagation();
+      playBeep(750, 'sine', 0.03, 0.03);
+      rotateToIndex(i);
+    };
+
+    ring.appendChild(card);
+  });
+
+  updateCarouselLayout();
+
+  // Drag listeners
+  stage.onmousedown = (e) => {
+    isDraggingCarousel = true;
+    startXCarousel = e.clientX;
+    currentRotationAtDrag = carouselRotation;
+    stage.classList.add('dragging');
+  };
+
+  window.addEventListener('mousemove', (e) => {
+    if (!isDraggingCarousel) return;
+    const delta = e.clientX - startXCarousel;
+    carouselRotation = currentRotationAtDrag + delta * 0.25;
+    updateCarouselLayout();
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (isDraggingCarousel) {
+      isDraggingCarousel = false;
+      stage.classList.remove('dragging');
+      // Snap to nearest card
+      const step = 360 / carouselDiseases.length;
+      const nearestIdx = Math.round(-carouselRotation / step);
+      rotateToIndex((nearestIdx % carouselDiseases.length + carouselDiseases.length) % carouselDiseases.length);
+    }
+  });
+
+  // Prev / Next Buttons
+  const btnPrev = document.getElementById('btnPrevCard');
+  const btnNext = document.getElementById('btnNextCard');
+  if (btnPrev) btnPrev.onclick = () => stepCarousel(1);
+  if (btnNext) btnNext.onclick = () => stepCarousel(-1);
+}
+
+function updateCarouselLayout() {
+  const cards = document.querySelectorAll('.carousel-card');
+  if (cards.length === 0) return;
+  const count = cards.length;
+  const step = 360 / count;
+
+  let closestIndex = 0;
+  let minDiff = Infinity;
+
+  cards.forEach((card, i) => {
+    const cardAngle = i * step + carouselRotation;
+    const rad = (cardAngle * Math.PI) / 180;
+    const cosVal = Math.cos(rad);
+
+    card.style.transform = `rotateY(${cardAngle}deg) translateZ(${carouselRadius}px)`;
+
+    // Opacity based on perspective
+    const opacity = Math.max(0.12, (cosVal + 1) / 2);
+    card.style.opacity = opacity;
+    card.style.pointerEvents = cosVal > 0.1 ? 'auto' : 'none';
+
+    // Normalize angle to find frontmost card
+    let norm = (cardAngle % 360 + 360) % 360;
+    let diff = Math.min(norm, 360 - norm);
+    if (diff < minDiff) {
+      minDiff = diff;
+      closestIndex = i;
+    }
+  });
+
+  cards.forEach((c, i) => {
+    if (i === closestIndex) {
+      c.classList.add('c');
+      if (carouselDiseases[i] && modelArchitectureData) {
+        showDiseaseProfile(carouselDiseases[i], modelArchitectureData);
+        // Sync list nav
+        document.querySelectorAll('.disease-nav-item').forEach((b, bIdx) => {
+          b.classList.toggle('active', bIdx === closestIndex);
+        });
+      }
+    } else {
+      c.classList.remove('c');
+    }
+  });
+}
+
+function rotateToIndex(idx) {
+  const step = 360 / carouselDiseases.length;
+  carouselRotation = -idx * step;
+  updateCarouselLayout();
+}
+
+function stepCarousel(dir) {
+  playBeep(820, 'sine', 0.03, 0.03);
+  const step = 360 / carouselDiseases.length;
+  carouselRotation += dir * step;
+  updateCarouselLayout();
+}
+
+// --- TARGETING RETICLE CURSOR ---
+function initReticle() {
+  const ret = document.getElementById('ret');
+  if (!ret) return;
+
+  window.addEventListener('mousemove', (e) => {
+    ret.style.left = e.clientX + 'px';
+    ret.style.top = e.clientY + 'px';
+  });
+
+  const interactiveSelector = 'button, a, input, textarea, .carousel-card, .preset-btn, .disease-nav-item';
+  document.addEventListener('mouseover', (e) => {
+    if (e.target.closest(interactiveSelector)) {
+      ret.classList.add('big');
+    }
+  });
+
+  document.addEventListener('mouseout', (e) => {
+    if (e.target.closest(interactiveSelector)) {
+      ret.classList.remove('big');
+    }
+  });
+}
+
+// --- EXPORT AUDIT TELEMETRY ---
+function exportAuditReport() {
+  playBeep(940, 'sine', 0.05, 0.06);
+  const logLines = Array.from(document.querySelectorAll('#logContent .log-line')).map(l => l.innerText).join('\n');
+  const report = {
+    system: "MED-OS Clinical Diagnostics Matrix",
+    timestamp: new Date().toISOString(),
+    accuracy: "100.0%",
+    loss_function: "Multinomial Cross-Entropy (Softmax)",
+    regularization: "L2 Ridge (L-BFGS)",
+    dataset_records: 450,
+    classes_count: 15,
+    recent_logs: logLines
+  };
+
+  const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `med-os-audit-${Date.now()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  addLog("AUDIT", "Exported complete diagnostic audit telemetry file (.json)", "ok");
+}
+
 // --- INITIALIZATION ---
 window.addEventListener('DOMContentLoaded', () => {
   initStarfield();
+  initReticle();
   runBootSequence();
   initTabs();
   initPresets();
   startUtcClock();
   fetchModelArchitecture();
   initUserConfig();
+  initAuthHandlers();
 
   // Button Listeners
   document.getElementById('btnDiagnose').onclick = runDiagnosis;
@@ -548,6 +872,10 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btnClearLogs').onclick = () => {
     document.getElementById('logContent').innerHTML = '';
   };
+
+  // Export audit button
+  const btnExp = document.getElementById('btnExportLogs');
+  if (btnExp) btnExp.onclick = exportAuditReport;
 
   document.getElementById('btnExecuteSub').onclick = executeSubscription;
 });
