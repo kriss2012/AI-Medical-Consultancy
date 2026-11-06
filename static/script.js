@@ -76,20 +76,28 @@ function initStarfield() {
   const canvas = document.getElementById('spaceCanvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
-  let w = canvas.width = window.innerWidth;
-  let h = canvas.height = window.innerHeight;
+  
+  function resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(dpr, dpr);
+  }
+  resize();
+  window.addEventListener('resize', resize);
 
-  window.addEventListener('resize', () => {
-    w = canvas.width = window.innerWidth;
-    h = canvas.height = window.innerHeight;
-  });
-
+  const isMobile = window.innerWidth < 768;
+  const STAR_COUNT = isMobile ? 35 : 85;
   const stars = [];
-  const STAR_COUNT = 90;
   for (let i = 0; i < STAR_COUNT; i++) {
     stars.push({
-      x: Math.random() * w,
-      y: Math.random() * h,
+      x: Math.random() * window.innerWidth,
+      y: Math.random() * window.innerHeight,
       size: Math.random() * 1.5 + 0.5,
       alpha: Math.random() * 0.7 + 0.3,
       speed: Math.random() * 0.2 + 0.05
@@ -97,6 +105,8 @@ function initStarfield() {
   }
 
   function render() {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
     ctx.clearRect(0, 0, w, h);
     for (let i = 0; i < stars.length; i++) {
       const s = stars[i];
@@ -646,8 +656,18 @@ let isDraggingCarousel = false;
 let startXCarousel = 0;
 let currentRotationAtDrag = 0;
 
+function getResponsiveRadius() {
+  const w = window.innerWidth;
+  if (w < 400) return 170;
+  if (w < 600) return 230;
+  if (w < 900) return 330;
+  if (w < 1200) return 420;
+  return 520;
+}
+
 function initCarousel3D(diseases, data) {
   carouselDiseases = diseases;
+  carouselRadius = getResponsiveRadius();
   const ring = document.getElementById('cardsRing');
   const stage = document.getElementById('stageContainer');
   if (!ring || !stage || diseases.length === 0) return;
@@ -687,6 +707,11 @@ function initCarousel3D(diseases, data) {
   });
 
   updateCarouselLayout();
+
+  window.addEventListener('resize', () => {
+    carouselRadius = getResponsiveRadius();
+    updateCarouselLayout();
+  });
 
   // Drag listeners
   stage.onmousedown = (e) => {
@@ -872,6 +897,44 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btnClearLogs').onclick = () => {
     document.getElementById('logContent').innerHTML = '';
   };
+
+  // Mobile Menu Drawer Toggle
+  const mobMenuBtn = document.getElementById('btnMobileMenuToggle');
+  const mobDrawer = document.getElementById('mobileNavDrawer');
+  if (mobMenuBtn && mobDrawer) {
+    mobMenuBtn.onclick = () => {
+      playBeep(750, 'sine', 0.03, 0.03);
+      mobDrawer.classList.toggle('open');
+    };
+  }
+
+  const btnMobAudio = document.getElementById('btnMobAudioToggle');
+  if (btnMobAudio) {
+    btnMobAudio.onclick = () => {
+      soundEnabled = !soundEnabled;
+      const label = `AUDIO: <b>${soundEnabled ? 'ON' : 'OFF'}</b>`;
+      btnMobAudio.innerHTML = label;
+      document.getElementById('btnAudioToggle').innerHTML = label;
+      if (soundEnabled) { initAudio(); playBeep(990, 'sine', 0.06, 0.06); }
+    };
+  }
+
+  const btnMobLogs = document.getElementById('btnMobLogsToggle');
+  if (btnMobLogs) {
+    btnMobLogs.onclick = () => {
+      playBeep(700, 'sine', 0.03, 0.03);
+      if (mobDrawer) mobDrawer.classList.remove('open');
+      document.getElementById('logDrawer').classList.add('open');
+    };
+  }
+
+  const btnMobSub = document.getElementById('btnMobSubUpgrade');
+  if (btnMobSub) {
+    btnMobSub.onclick = () => {
+      if (mobDrawer) mobDrawer.classList.remove('open');
+      openSubModal();
+    };
+  }
 
   // Export audit button
   const btnExp = document.getElementById('btnExportLogs');

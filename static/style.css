@@ -1,6 +1,6 @@
 /* ==========================================================================
    KIRI OSO HUD CLINICAL DIAGNOSTICS THEME
-   Inspired by KIRI OSO Serverless PaaS HUD
+   UNIVERSAL RESPONSIVE ARCHITECTURE (320px - 3440px)
    ========================================================================== */
 
 @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;500;600;700&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
@@ -8,7 +8,7 @@
 :root {
   --bg: #030508;
   --bg2: #070a0f;
-  --bg-panel: rgba(8, 12, 18, 0.92);
+  --bg-panel: rgba(8, 12, 18, 0.94);
   --bg-panel-solid: #090e15;
   
   /* Cyber Crimson Red */
@@ -33,31 +33,56 @@
   --bd: #1c2736;
   --bd-light: #2c3c50;
   --bd-red: #ff204e;
+
+  /* Universal Fluid Spacing & Dimensions */
+  --container-max: 1440px;
+  --gutter: clamp(10px, 3vw, 24px);
+  --nav-height: 56px;
+  --touch-min: 44px;
 }
 
-* {
+*, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-html, body {
+html {
+  min-width: 320px;
+  width: 100%;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  min-width: 320px;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
   margin: 0;
-  min-height: 100%;
   background: radial-gradient(130% 95% at 50% 42%, #0a111a, var(--bg));
   color: var(--tx);
   font-family: "Share Tech Mono", ui-monospace, monospace;
-  font-size: 13px;
+  font-size: clamp(12px, 1.1vw, 13px);
   line-height: 1.5;
   overflow-x: hidden;
   user-select: text;
 }
 
+img, svg, canvas {
+  max-width: 100%;
+  display: block;
+}
+
 button, input, textarea, select {
   font-family: inherit;
   color: inherit;
+  font-size: inherit;
 }
-button { cursor: pointer; }
+button {
+  cursor: pointer;
+  touch-action: manipulation;
+}
 a { color: inherit; text-decoration: none; }
 :focus-visible { outline: 2px solid var(--red); outline-offset: 3px; }
 .dim { color: var(--tx2); }
@@ -70,21 +95,25 @@ b { font-weight: 600; }
   border: 1px solid var(--bd);
   background: var(--bg-panel);
   backdrop-filter: blur(10px);
-  padding: 8px 14px;
+  -webkit-backdrop-filter: blur(10px);
+  padding: 8px 12px;
   text-transform: uppercase;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   font-size: 11px;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
+  min-height: var(--touch-min);
   transition: all 0.2s ease;
+  white-space: nowrap;
 }
 .hud::before {
   content: "";
   position: absolute;
   top: -1px;
   left: -1px;
-  width: 12px;
+  width: 10px;
   height: 2px;
   background: var(--red);
 }
@@ -93,8 +122,8 @@ b { font-weight: 600; }
   position: absolute;
   bottom: -1px;
   right: -1px;
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border: 1.5px solid var(--tx2);
   border-left: 0;
   border-top: 0;
@@ -121,9 +150,6 @@ button.hud:hover, a.hud:hover {
 }
 .hud.cyan::before { background: var(--cyan); }
 .hud.cyan::after { border-color: var(--cyan); }
-.hud.cyan:hover {
-  box-shadow: 0 0 16px var(--cyan-glow);
-}
 .hud.emerald {
   border-color: var(--emerald);
   color: var(--emerald);
@@ -131,7 +157,7 @@ button.hud:hover, a.hud:hover {
 .hud.emerald::before { background: var(--emerald); }
 .hud.emerald::after { border-color: var(--emerald); }
 
-/* Deep Space Starfield & Halo Canvas */
+/* Background Overlays */
 #spaceCanvas {
   position: fixed;
   inset: 0;
@@ -140,8 +166,6 @@ button.hud:hover, a.hud:hover {
   pointer-events: none;
   z-index: 1;
 }
-
-/* Grid Overlay & Crosshairs */
 .grid-overlay {
   position: fixed;
   inset: 0;
@@ -160,8 +184,6 @@ button.hud:hover, a.hud:hover {
   pointer-events: none;
   z-index: 2;
 }
-
-/* Scanline */
 .scan {
   position: fixed;
   left: 0;
@@ -188,7 +210,9 @@ button.hud:hover, a.hud:hover {
   place-content: center;
   justify-items: center;
   gap: 16px;
-  transition: opacity 0.6s ease;
+  padding: 20px;
+  text-align: center;
+  transition: opacity 0.5s ease;
 }
 #boot.off {
   opacity: 0;
@@ -196,8 +220,8 @@ button.hud:hover, a.hud:hover {
   display: none !important;
 }
 .boot-emblem {
-  width: 72px;
-  height: 72px;
+  width: clamp(56px, 12vw, 72px);
+  height: clamp(56px, 12vw, 72px);
   border: 2px solid var(--red);
   display: grid;
   place-items: center;
@@ -208,28 +232,28 @@ button.hud:hover, a.hud:hover {
 .boot-emblem::after {
   content: "";
   position: absolute;
-  inset: 6px;
+  inset: 5px;
   border: 1px dashed var(--cyan);
 }
 .boot-emblem svg {
-  width: 38px;
-  height: 38px;
+  width: 32px;
+  height: 32px;
   fill: var(--red);
 }
 #boot b {
-  letter-spacing: 0.35em;
+  letter-spacing: 0.25em;
   color: #ffffff;
-  font-size: 14px;
+  font-size: clamp(12px, 3vw, 14px);
   font-family: "Chakra Petch", sans-serif;
 }
 #boot span {
   color: var(--tx2);
-  font-size: 11px;
-  letter-spacing: 0.22em;
+  font-size: clamp(10px, 2.5vw, 11px);
+  letter-spacing: 0.16em;
 }
 #boot i {
   display: block;
-  width: 280px;
+  width: min(280px, 80vw);
   height: 3px;
   background: var(--bd);
   overflow: hidden;
@@ -245,47 +269,58 @@ button.hud:hover, a.hud:hover {
 }
 @keyframes pulse { 50% { opacity: 0.45; } }
 
-/* App Frame Layout */
+/* App Frame Container */
 .app-frame {
   position: relative;
   z-index: 10;
   min-height: 100vh;
-  padding: 80px 24px 70px;
-  max-width: 1540px;
+  min-height: 100dvh;
+  padding-top: calc(var(--nav-height) + 20px);
+  padding-bottom: clamp(60px, 10vh, 80px);
+  padding-inline: var(--gutter);
+  max-width: var(--container-max);
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
-/* Top Navigation Header */
+/* ==========================================================================
+   TOP NAVIGATION BAR (RESPONSIVE ARCHITECTURE)
+   ========================================================================== */
 .top-nav {
   position: fixed;
-  top: 12px;
-  left: 20px;
-  right: 20px;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--nav-height);
   display: flex;
   align-items: center;
-  gap: 14px;
-  z-index: 30;
-  background: rgba(8, 12, 18, 0.94);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--bd);
-  padding: 8px 16px;
+  justify-content: space-between;
+  gap: 10px;
+  z-index: 40;
+  background: rgba(8, 12, 18, 0.96);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--bd);
+  padding: 0 clamp(12px, 3vw, 24px);
+  padding-top: env(safe-area-inset-top, 0);
 }
 .top-nav::before {
   content: "";
   position: absolute;
   top: -1px;
-  left: -1px;
-  width: 24px;
+  left: 0;
+  width: 32px;
   height: 2px;
   background: var(--red);
 }
+
 .brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  flex-shrink: 0;
 }
 .brand-emblem {
   width: 28px;
@@ -295,6 +330,7 @@ button.hud:hover, a.hud:hover {
   place-items: center;
   background: var(--red-dim);
   box-shadow: 0 0 10px var(--red-glow);
+  flex-shrink: 0;
 }
 .brand-emblem svg {
   width: 16px;
@@ -303,39 +339,41 @@ button.hud:hover, a.hud:hover {
 }
 .brand-title {
   font-family: "Chakra Petch", sans-serif;
-  letter-spacing: 0.22em;
-  font-size: 16px;
+  letter-spacing: 0.18em;
+  font-size: clamp(13px, 1.6vw, 16px);
   white-space: nowrap;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   font-weight: 700;
 }
 .brand-title small {
   color: var(--red);
-  font-size: 9px;
-  letter-spacing: 0.14em;
+  font-size: 8px;
+  letter-spacing: 0.12em;
   border: 1px solid var(--red);
-  padding: 1px 6px;
+  padding: 1px 5px;
   background: var(--red-dim);
 }
 
 .telemetry-strip {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-left: 20px;
+  gap: 12px;
+  margin-left: 12px;
   border-left: 1px solid var(--bd);
-  padding-left: 20px;
+  padding-left: 14px;
+  overflow: hidden;
 }
 .chip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   font-size: 10px;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   color: var(--tx2);
   text-transform: uppercase;
+  white-space: nowrap;
 }
 .chip .dot {
   width: 6px;
@@ -344,6 +382,7 @@ button.hud:hover, a.hud:hover {
   background: var(--emerald);
   box-shadow: 0 0 8px var(--emerald);
   animation: blink 2s infinite;
+  flex-shrink: 0;
 }
 .chip b { color: var(--tx); }
 @keyframes blink { 50% { opacity: 0.3; } }
@@ -351,30 +390,113 @@ button.hud:hover, a.hud:hover {
 .nav-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   margin-left: auto;
+  flex-shrink: 0;
 }
 
-/* Category & Mode Bar */
+/* Mobile Menu Button */
+.btn-menu-toggle {
+  display: none;
+  padding: 6px 10px;
+  font-size: 10px;
+  font-family: "Chakra Petch", sans-serif;
+  letter-spacing: 0.14em;
+  gap: 6px;
+}
+
+/* Mobile Slide-down HUD Drawer */
+.mobile-nav-drawer {
+  display: none;
+  position: fixed;
+  top: var(--nav-height);
+  left: 0;
+  right: 0;
+  background: rgba(6, 9, 14, 0.98);
+  border-bottom: 1px solid var(--bd-light);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 16px;
+  z-index: 39;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.9);
+  animation: slideDown 0.25s ease;
+}
+.mobile-nav-drawer.open {
+  display: flex;
+}
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.mobile-nav-drawer .drawer-telemetry {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--bd);
+}
+.mobile-nav-drawer .drawer-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.mobile-nav-drawer .hud {
+  width: 100%;
+  justify-content: center;
+}
+
+/* Responsive Navigation Breakpoints */
+@media (max-width: 1120px) {
+  .telemetry-strip {
+    display: none; /* Collapsed on tablet/mobile */
+  }
+}
+@media (max-width: 768px) {
+  .nav-actions .hud:not(.auth-btn):not(#btnUpgradePro) {
+    display: none; /* Moved into mobile drawer */
+  }
+  .brand-title small { display: none; }
+  .btn-menu-toggle { display: inline-flex; }
+}
+@media (max-width: 480px) {
+  .brand-title { font-size: 12px; letter-spacing: 0.12em; }
+  .brand-emblem { width: 24px; height: 24px; }
+  .hud { font-size: 10px; padding: 6px 10px; }
+  #sub-btn-container { display: none; } /* Access via drawer on compact screens */
+}
+
+/* ==========================================================================
+   MODE BAR & TABS (RESPONSIVE FLUIDITY)
+   ========================================================================== */
 .mode-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   flex-wrap: wrap;
   border-bottom: 1px solid var(--bd);
-  padding-bottom: 12px;
+  padding-bottom: 10px;
 }
 .hud-tabs {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
+  width: 100%;
+  max-width: 100%;
 }
 .hud-tab {
   font-family: "Chakra Petch", sans-serif;
-  font-size: 11px;
-  letter-spacing: 0.16em;
-  padding: 7px 14px;
+  font-size: clamp(10px, 1.2vw, 11px);
+  letter-spacing: 0.12em;
+  padding: 8px 12px;
+  flex: 1 1 auto;
+  text-align: center;
+  min-width: min(140px, 100%);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .hud-tab.active, .hud-tab[aria-pressed="true"] {
   border-color: var(--red);
@@ -392,10 +514,11 @@ button.hud:hover, a.hud:hover {
   background: var(--red);
 }
 
-/* Main Workbench Panes */
+/* Main Panes */
 .tab-pane {
   display: none;
   animation: fadeIn 0.35s ease;
+  width: 100%;
 }
 .tab-pane.active {
   display: block;
@@ -405,26 +528,30 @@ button.hud:hover, a.hud:hover {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Two Column Diagnostic Console */
+/* ==========================================================================
+   DIAGNOSTIC WORKBENCH & SLATES
+   ========================================================================== */
 .diag-grid {
   display: grid;
   grid-template-columns: 1.15fr 0.85fr;
-  gap: 20px;
+  gap: 18px;
+  width: 100%;
 }
-@media (max-width: 1100px) {
+@media (max-width: 1024px) {
   .diag-grid { grid-template-columns: 1fr; }
 }
 
-/* HUD Slate Container */
 .slate {
   position: relative;
   background: var(--bg-panel);
   border: 1px solid var(--bd);
-  padding: 22px;
+  padding: clamp(14px, 3vw, 22px);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7);
+  width: 100%;
+  min-width: 0; /* Prevents flex/grid blowouts */
 }
 .slate::before {
   content: "";
@@ -450,17 +577,19 @@ button.hud:hover, a.hud:hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   border-bottom: 1px solid var(--bd);
-  padding-bottom: 12px;
+  padding-bottom: 10px;
+  flex-wrap: wrap;
 }
 .slate-title {
   font-family: "Chakra Petch", sans-serif;
-  font-size: 15px;
-  letter-spacing: 0.16em;
+  font-size: clamp(13px, 1.5vw, 15px);
+  letter-spacing: 0.14em;
   font-weight: 600;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 .slate-title i {
   color: var(--red);
@@ -468,37 +597,44 @@ button.hud:hover, a.hud:hover {
 }
 .slate-badge {
   font-size: 9px;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   padding: 2px 8px;
   border: 1px solid var(--bd-light);
   color: var(--tx2);
+  white-space: nowrap;
 }
 
 /* Preset Buttons */
 .presets-wrap {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 .presets-lbl {
   font-size: 10px;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.14em;
   color: var(--tx2);
   text-transform: uppercase;
 }
 .presets-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(160px, 100%), 1fr));
   gap: 6px;
-  flex-wrap: wrap;
 }
 .preset-btn {
   background: rgba(14, 20, 29, 0.85);
   border: 1px solid var(--bd);
   color: var(--tx2);
   font-size: 10px;
-  letter-spacing: 0.08em;
-  padding: 5px 10px;
+  letter-spacing: 0.06em;
+  padding: 8px 10px;
+  min-height: var(--touch-min);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
   transition: all 0.2s ease;
+  line-height: 1.3;
 }
 .preset-btn:hover {
   border-color: var(--cyan);
@@ -506,7 +642,7 @@ button.hud:hover, a.hud:hover {
   background: var(--cyan-dim);
 }
 
-/* High-Tech Textarea */
+/* Textarea & Inputs */
 .input-hud-box {
   position: relative;
   background: rgba(4, 7, 12, 0.8);
@@ -519,9 +655,9 @@ button.hud:hover, a.hud:hover {
   background: transparent;
   border: 0;
   outline: none;
-  padding: 14px;
+  padding: 12px;
   font-family: "Share Tech Mono", monospace;
-  font-size: 13px;
+  font-size: clamp(12px, 1.1vw, 13px);
   color: #ffffff;
   resize: vertical;
   line-height: 1.6;
@@ -537,45 +673,50 @@ button.hud:hover, a.hud:hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 12px;
-  font-size: 10px;
-  letter-spacing: 0.12em;
+  gap: 8px;
+  padding: 6px 10px;
+  font-size: 9px;
+  letter-spacing: 0.1em;
   color: var(--tx2);
   border-top: 1px solid rgba(255, 255, 255, 0.04);
+  flex-wrap: wrap;
 }
 
-/* Action Execution Row */
+/* Actions Row */
 .action-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 .btn-exec {
-  flex: 1;
-  padding: 12px 18px;
-  font-size: 13px;
+  flex: 1 1 200px;
+  padding: 12px 16px;
+  font-size: clamp(11px, 1.3vw, 13px);
   font-family: "Chakra Petch", sans-serif;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.18em;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
+  min-height: var(--touch-min);
 }
 .btn-clear {
   padding: 12px 16px;
+  min-height: var(--touch-min);
 }
 
-/* Results Display Slate */
+/* Results Display */
 .result-display {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
 .verdict-banner {
   border: 1px solid var(--bd);
   background: linear-gradient(145deg, rgba(14, 20, 29, 0.95), rgba(7, 10, 15, 0.95));
-  padding: 16px 20px;
+  padding: clamp(12px, 2.5vw, 18px);
   position: relative;
 }
 .verdict-banner::before {
@@ -603,23 +744,25 @@ button.hud:hover, a.hud:hover {
   box-shadow: 0 0 35px var(--emerald-dim);
 }
 .verdict-tier {
-  font-size: 10px;
-  letter-spacing: 0.22em;
+  font-size: 9px;
+  letter-spacing: 0.18em;
   color: var(--tx2);
   margin-bottom: 4px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 6px;
 }
 .verdict-name {
   font-family: "Chakra Petch", sans-serif;
-  font-size: 26px;
+  font-size: clamp(20px, 4vw, 26px);
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   color: #ffffff;
+  overflow-wrap: anywhere;
 }
 .verdict-conf-gauge {
-  margin-top: 10px;
+  margin-top: 8px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -639,11 +782,11 @@ button.hud:hover, a.hud:hover {
   transition: width 0.7s cubic-bezier(0.2, 0.85, 0.2, 1);
 }
 
-/* Differential Probability Bars */
+/* Differential Probability List */
 .diff-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 .diff-item {
   display: flex;
@@ -657,6 +800,7 @@ button.hud:hover, a.hud:hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   font-size: 11px;
 }
 .diff-bar {
@@ -671,21 +815,23 @@ button.hud:hover, a.hud:hover {
   transition: width 0.6s ease;
 }
 
-/* Token Attribution Tags */
+/* Tokens */
 .tokens-wrap {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 5px;
 }
 .token-chip {
   font-size: 10px;
-  padding: 3px 8px;
+  padding: 4px 8px;
   border: 1px solid var(--bd);
   background: rgba(10, 16, 24, 0.8);
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 .token-chip.pos {
   border-color: var(--red);
@@ -698,21 +844,22 @@ button.hud:hover, a.hud:hover {
   background: var(--cyan-dim);
 }
 
-/* Treatment / Clinical Protocol Grid */
+/* Treatment / Clinical Protocols */
 .protocol-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
   gap: 10px;
 }
 .protocol-card {
   border: 1px solid var(--bd);
   background: rgba(10, 15, 22, 0.75);
   padding: 10px 12px;
+  min-width: 0;
 }
 .protocol-card h4 {
   font-family: "Chakra Petch", sans-serif;
   font-size: 11px;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   color: var(--red);
   margin-bottom: 6px;
   display: flex;
@@ -727,16 +874,22 @@ button.hud:hover, a.hud:hover {
   flex-direction: column;
   gap: 4px;
 }
+.protocol-card li {
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
 .protocol-card li::before {
-  content: "â–¸ ";
+  content: "▸ ";
   color: var(--red);
 }
 
-/* Architecture & Model Workings Deck */
+/* ==========================================================================
+   NEURAL ARCHITECTURE & PIPELINE DIAGRAM
+   ========================================================================== */
 .arch-hero {
   border: 1px solid var(--bd);
   background: var(--bg-panel);
-  padding: 24px;
+  padding: clamp(16px, 3vw, 24px);
   position: relative;
 }
 .arch-hero::before {
@@ -750,29 +903,31 @@ button.hud:hover, a.hud:hover {
 }
 .arch-hero h2 {
   font-family: "Chakra Petch", sans-serif;
-  font-size: 24px;
-  letter-spacing: 0.12em;
+  font-size: clamp(18px, 3vw, 24px);
+  letter-spacing: 0.1em;
   margin-bottom: 6px;
+  line-height: 1.25;
 }
 .arch-hero p {
   color: var(--tx2);
-  font-size: 13px;
+  font-size: clamp(11px, 1.2vw, 13px);
   max-width: 900px;
   line-height: 1.6;
 }
 
 .pipeline-diagram {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 14px;
-  margin-top: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  gap: 12px;
+  margin-top: 14px;
 }
 .pipe-step {
   border: 1px solid var(--bd);
   background: rgba(8, 12, 18, 0.9);
-  padding: 16px;
+  padding: 14px;
   position: relative;
   transition: all 0.25s ease;
+  min-width: 0;
 }
 .pipe-step::before {
   content: "";
@@ -789,46 +944,50 @@ button.hud:hover, a.hud:hover {
 }
 .pipe-step .step-num {
   font-family: "Chakra Petch", sans-serif;
-  font-size: 20px;
+  font-size: 18px;
   color: var(--red);
   font-weight: 700;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 .pipe-step h4 {
   font-family: "Chakra Petch", sans-serif;
-  font-size: 13px;
-  letter-spacing: 0.08em;
-  margin-bottom: 6px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
   color: #ffffff;
 }
 .pipe-step p {
   font-size: 11px;
   color: var(--tx2);
-  line-height: 1.5;
+  line-height: 1.45;
 }
 
-/* Math Equations Box */
+/* Math Box */
 .math-box {
   background: #020407;
   border: 1px solid var(--bd);
-  padding: 18px;
-  margin-top: 14px;
+  padding: clamp(12px, 2.5vw, 18px);
+  margin-top: 10px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .math-row {
   display: flex;
   align-items: baseline;
-  gap: 14px;
-  font-size: 12px;
+  gap: 10px;
+  font-size: 11px;
+  white-space: nowrap;
 }
 .math-lbl {
-  width: 140px;
+  width: 130px;
+  flex-shrink: 0;
   font-family: "Chakra Petch", sans-serif;
   color: var(--red);
-  letter-spacing: 0.12em;
-  font-size: 11px;
+  letter-spacing: 0.1em;
+  font-size: 10px;
 }
 .math-code {
   font-family: "Share Tech Mono", monospace;
@@ -836,13 +995,126 @@ button.hud:hover, a.hud:hover {
   background: rgba(0, 229, 255, 0.08);
   padding: 3px 8px;
   border-left: 2px solid var(--cyan);
+  display: inline-block;
 }
 
-/* Disease Biomarker Atlas Explorer */
+/* ==========================================================================
+   3D CYLINDRICAL STAGE & CAROUSEL (CROSS-DEVICE SCALING)
+   ========================================================================== */
+.carousel-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.stage-container {
+  position: relative;
+  width: 100%;
+  height: clamp(240px, 40vh, 340px);
+  perspective: 1400px;
+  perspective-origin: 50% 45%;
+  user-select: none;
+  touch-action: pan-y;
+  cursor: grab;
+  overflow: hidden;
+  margin: 8px 0 14px;
+  border: 1px solid var(--bd);
+  background: radial-gradient(circle at 50% 50%, rgba(14, 20, 29, 0.8), rgba(4, 7, 12, 0.95));
+}
+.stage-container.dragging { cursor: grabbing; }
+.cards-ring {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  pointer-events: none;
+}
+.carousel-card {
+  position: absolute;
+  left: 50%;
+  top: 45%;
+  width: clamp(160px, 45vw, 240px);
+  height: clamp(130px, 28vh, 175px);
+  margin-left: calc(-1 * clamp(160px, 45vw, 240px) / 2);
+  margin-top: calc(-1 * clamp(130px, 28vh, 175px) / 2);
+  padding: clamp(10px, 2vw, 14px);
+  border: 1px solid var(--bd-light);
+  background: linear-gradient(160deg, rgba(14, 20, 29, 0.96), rgba(7, 10, 15, 0.98));
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 11px;
+  backface-visibility: hidden;
+  pointer-events: auto;
+  cursor: pointer;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.carousel-card::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  width: 12px;
+  height: 2px;
+  background: var(--tx-dark);
+}
+.carousel-card::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 5px;
+  height: 5px;
+  border: 1.5px solid var(--tx-dark);
+  border-left: 0;
+  border-top: 0;
+}
+.carousel-card.c {
+  border-color: var(--red);
+  background: linear-gradient(160deg, rgba(45, 12, 22, 0.96), rgba(16, 4, 8, 0.98));
+  box-shadow: 0 0 35px var(--red-glow), inset 0 0 0 1px rgba(255, 32, 78, 0.4);
+}
+.carousel-card.c::before { background: var(--red); }
+.carousel-card.c::after { border-color: var(--red); }
+.carousel-card .c-num {
+  font-family: "Chakra Petch", sans-serif;
+  font-size: clamp(16px, 3.5vw, 22px);
+  color: var(--tx2);
+  font-weight: 300;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.carousel-card.c .c-num { color: var(--red); }
+.carousel-card h3 {
+  font-family: "Chakra Petch", sans-serif;
+  font-size: clamp(12px, 2vw, 15px);
+  font-weight: 600;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 1px 0;
+}
+.carousel-card .c-meta {
+  margin-top: auto;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 4px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: var(--tx2);
+}
+
+/* ==========================================================================
+   BIOMARKER ATLAS & TABLES (RESPONSIVE WRAPPER)
+   ========================================================================== */
 .biomarker-explorer {
   display: grid;
-  grid-template-columns: 280px 1fr;
-  gap: 16px;
+  grid-template-columns: 260px 1fr;
+  gap: 14px;
 }
 @media (max-width: 900px) {
   .biomarker-explorer { grid-template-columns: 1fr; }
@@ -851,62 +1123,72 @@ button.hud:hover, a.hud:hover {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  max-height: 480px;
+  max-height: 440px;
   overflow-y: auto;
-  padding-right: 6px;
+  -webkit-overflow-scrolling: touch;
+  padding-right: 4px;
+}
+@media (max-width: 900px) {
+  .disease-selector {
+    flex-direction: row;
+    max-height: none;
+    overflow-x: auto;
+    padding-bottom: 6px;
+  }
 }
 .disease-nav-item {
   border: 1px solid var(--bd);
   background: rgba(10, 15, 22, 0.85);
   padding: 8px 12px;
   font-size: 11px;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-align: left;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  min-height: var(--touch-min);
+  white-space: nowrap;
 }
 .disease-nav-item:hover, .disease-nav-item.active {
   border-color: var(--red);
   background: var(--red-dim);
   color: #ffffff;
 }
-.disease-nav-item.active::before {
-  content: "â–¶ ";
-  color: var(--red);
-}
 
-.biomarker-detail-panel {
-  border: 1px solid var(--bd);
-  background: var(--bg-panel);
-  padding: 20px;
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-top: 8px;
 }
 .biomarker-table {
   width: 100%;
+  min-width: 420px; /* Ensures columns don't crush on small screens */
   border-collapse: collapse;
-  margin-top: 12px;
   font-size: 11px;
 }
 .biomarker-table th, .biomarker-table td {
-  padding: 8px 12px;
+  padding: 8px 10px;
   text-align: left;
   border-bottom: 1px solid var(--bd);
 }
 .biomarker-table th {
   color: var(--tx2);
   text-transform: uppercase;
-  font-size: 10px;
-  letter-spacing: 0.14em;
+  font-size: 9px;
+  letter-spacing: 0.12em;
 }
 
-/* Bottom Telemetry Drawer */
+/* ==========================================================================
+   TERMINAL DRAWER
+   ========================================================================== */
 #logDrawer {
   position: fixed;
-  left: 20px;
-  right: 20px;
-  bottom: 46px;
-  height: 280px;
+  left: var(--gutter);
+  right: var(--gutter);
+  bottom: 42px;
+  height: min(45dvh, 300px);
   background: rgba(6, 9, 14, 0.98);
   border: 1px solid var(--bd-light);
   box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.9);
@@ -926,75 +1208,94 @@ button.hud:hover, a.hud:hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 16px;
+  gap: 8px;
+  padding: 8px 12px;
   background: #090e15;
   border-bottom: 1px solid var(--bd);
   font-family: "Chakra Petch", sans-serif;
-  letter-spacing: 0.14em;
-  font-size: 11px;
+  letter-spacing: 0.12em;
+  font-size: 10px;
 }
 .drawer-content {
   flex: 1;
-  padding: 12px 16px;
+  padding: 10px 12px;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   font-family: "Share Tech Mono", monospace;
-  font-size: 11px;
-  line-height: 1.6;
+  font-size: 10px;
+  line-height: 1.5;
   color: #9ab0c7;
 }
 .log-line {
   display: flex;
-  gap: 12px;
+  gap: 8px;
+  word-break: break-all;
 }
-.log-line .ts { color: var(--tx-dark); }
-.log-line .tag { color: var(--cyan); }
+.log-line .ts { color: var(--tx-dark); flex-shrink: 0; }
+.log-line .tag { color: var(--cyan); flex-shrink: 0; }
 .log-line .ok { color: var(--emerald); }
 .log-line .err { color: var(--red); }
 
-/* Fixed Status Bar Footer */
+/* ==========================================================================
+   STATUS BAR FOOTER
+   ========================================================================== */
 .status-bar {
   position: fixed;
-  left: 20px;
-  right: 20px;
-  bottom: 8px;
+  left: 0;
+  right: 0;
+  bottom: 0;
   height: 32px;
-  background: rgba(8, 12, 18, 0.95);
-  border: 1px solid var(--bd);
+  background: rgba(8, 12, 18, 0.96);
+  border-top: 1px solid var(--bd);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
-  gap: 20px;
-  padding: 0 16px;
+  gap: 12px;
+  padding: 0 clamp(10px, 3vw, 20px);
+  padding-bottom: env(safe-area-inset-bottom, 0);
   z-index: 30;
-  font-size: 11px;
-  letter-spacing: 0.1em;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  overflow: hidden;
+  white-space: nowrap;
 }
-.status-bar i {
-  color: var(--red);
-  font-style: normal;
-}
+.status-bar i { color: var(--red); font-style: normal; }
 .status-bar .sp { flex: 1; }
 .status-bar span { color: var(--tx2); }
 .status-bar span b { color: var(--tx); }
 
-/* Dialogs & Modals */
+@media (max-width: 600px) {
+  .status-bar .hide-mobile { display: none; }
+}
+
+/* ==========================================================================
+   DIALOGS & MODALS (RESPONSIVE SCROLL CONTAINERS)
+   ========================================================================== */
 dialog {
   background: transparent;
   border: 0;
   color: var(--tx);
-  width: min(580px, 94%);
+  width: min(560px, calc(100vw - 24px));
+  max-height: calc(100dvh - 32px);
   margin: auto;
+  padding: 0;
 }
 dialog::backdrop {
   background: rgba(3, 5, 8, 0.88);
   backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 dialog .hud-modal {
   display: block;
   background: #080c12;
   border: 1px solid var(--bd-light);
-  padding: 26px 28px;
+  padding: clamp(16px, 4vw, 26px);
   position: relative;
   box-shadow: 0 0 50px rgba(0, 0, 0, 0.95);
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 dialog .hud-modal::before {
   content: "";
@@ -1007,12 +1308,12 @@ dialog .hud-modal::before {
 }
 dialog h3 {
   font-family: "Chakra Petch", sans-serif;
-  font-size: 20px;
-  letter-spacing: 0.12em;
-  margin-bottom: 8px;
+  font-size: clamp(16px, 3vw, 20px);
+  letter-spacing: 0.1em;
+  margin-bottom: 6px;
 }
 
-/* Custom Targeting Reticle Cursor */
+/* Targeting Reticle (Hover Only) */
 #ret {
   position: fixed;
   width: 20px;
@@ -1022,121 +1323,28 @@ dialog h3 {
   pointer-events: none;
   z-index: 99999;
   transform: translate(-50%, -50%);
-  transition: width 0.15s ease, height 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+  transition: width 0.15s ease, height 0.15s ease, background 0.15s ease;
   display: none;
 }
-@media (pointer: fine) {
+@media (hover: hover) and (pointer: fine) {
   #ret { display: block; }
 }
 #ret.big {
-  width: 42px;
-  height: 42px;
+  width: 40px;
+  height: 40px;
   background: rgba(255, 32, 78, 0.16);
   box-shadow: 0 0 16px var(--red-glow);
 }
 
-/* 3D Cylindrical Stage & Carousel */
-.stage-container {
-  position: relative;
-  width: 100%;
-  height: 340px;
-  perspective: 1600px;
-  perspective-origin: 50% 45%;
-  user-select: none;
-  touch-action: pan-y;
-  cursor: grab;
-  overflow: hidden;
-  margin: 12px 0 16px;
-  border: 1px solid var(--bd);
-  background: radial-gradient(circle at 50% 50%, rgba(14, 20, 29, 0.8), rgba(4, 7, 12, 0.95));
-}
-.stage-container.dragging { cursor: grabbing; }
-.cards-ring {
-  position: absolute;
-  inset: 0;
-  transform-style: preserve-3d;
-  pointer-events: none;
-}
-.carousel-card {
-  position: absolute;
-  left: 50%;
-  top: 45%;
-  width: 250px;
-  height: 180px;
-  margin: -90px 0 0 -125px;
-  padding: 14px 16px;
-  border: 1px solid var(--bd-light);
-  background: linear-gradient(160deg, rgba(14, 20, 29, 0.96), rgba(7, 10, 15, 0.98));
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 11px;
-  backface-visibility: hidden;
-  pointer-events: auto;
-  cursor: pointer;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
-  transition: border-color 0.3s, box-shadow 0.3s;
-}
-.carousel-card::before {
-  content: "";
-  position: absolute;
-  top: -1px;
-  left: -1px;
-  width: 14px;
-  height: 2px;
-  background: var(--tx-dark);
-}
-.carousel-card::after {
-  content: "";
-  position: absolute;
-  bottom: -1px;
-  right: -1px;
-  width: 6px;
-  height: 6px;
-  border: 1.5px solid var(--tx-dark);
-  border-left: 0;
-  border-top: 0;
-}
-.carousel-card.c {
-  border-color: var(--red);
-  background: linear-gradient(160deg, rgba(45, 12, 22, 0.96), rgba(16, 4, 8, 0.98));
-  box-shadow: 0 0 35px var(--red-glow), inset 0 0 0 1px rgba(255, 32, 78, 0.4);
-}
-.carousel-card.c::before { background: var(--red); }
-.carousel-card.c::after { border-color: var(--red); }
-.carousel-card .c-num {
-  font-family: "Chakra Petch", sans-serif;
-  font-size: 22px;
-  color: var(--tx2);
-  font-weight: 300;
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-}
-.carousel-card.c .c-num { color: var(--red); }
-.carousel-card h3 {
-  font-family: "Chakra Petch", sans-serif;
-  font-size: 15px;
-  font-weight: 600;
-  color: #ffffff;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin: 2px 0;
-}
-.carousel-card .c-meta {
-  margin-top: auto;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  padding-top: 6px;
-  display: flex;
-  justify-content: space-between;
-  font-size: 10px;
-  color: var(--tx2);
-}
-.carousel-controls {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
+/* ==========================================================================
+   REDUCED MOTION SUPPORT
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .scan { display: none; }
 }

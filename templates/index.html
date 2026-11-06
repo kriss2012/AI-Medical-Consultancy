@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>MED-OS // Clinical AI HUD Diagnostic Matrix</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -55,8 +55,24 @@
       <button class="hud" id="btnLogsToggle">TERMINAL</button>
       <div id="sub-btn-container"></div>
       <div id="auth-section"></div>
+      <button class="hud btn-menu-toggle" id="btnMobileMenuToggle" aria-label="Toggle Mobile HUD Menu"><span>MENU</span> <i>â˜°</i></button>
     </div>
   </header>
+
+  <!-- Mobile Slide-Down HUD Navigation Drawer -->
+  <div class="mobile-nav-drawer" id="mobileNavDrawer">
+    <div class="drawer-telemetry">
+      <div class="chip"><span class="dot"></span> MATRIX: <b>ONLINE</b></div>
+      <div class="chip">CV ACC: <b id="mobAccuracy">100.0%</b></div>
+      <div class="chip">LATENCY: <b id="mobLatency">8.4ms</b></div>
+      <div class="chip">ENC: <b>AES-256</b></div>
+    </div>
+    <div class="drawer-actions">
+      <button class="hud" id="btnMobAudioToggle">AUDIO: <b>OFF</b></button>
+      <button class="hud" id="btnMobLogsToggle">DIAGNOSTIC TERMINAL</button>
+      <button class="hud fill" id="btnMobSubUpgrade">UPGRADE PRO (&#8377;499)</button>
+    </div>
+  </div>
 
   <!-- Main Application Frame -->
   <div class="app-frame">
@@ -332,16 +348,18 @@
             <h2 id="atlasDiseaseName" style="font-family:'Chakra Petch',sans-serif; font-size: 24px; margin: 4px 0 12px; color: #ffffff;">Loading...</h2>
 
             <div class="presets-lbl">TOP PREDICTIVE TF-IDF TOKENS & MODEL COEFFICIENTS (w_c):</div>
-            <table class="biomarker-table">
-              <thead>
-                <tr>
-                  <th>Biomarker Token / N-Gram</th>
-                  <th>Model Weight (\(w_{c,j}\))</th>
-                  <th>Diagnostic Correlation</th>
-                </tr>
-              </thead>
-              <tbody id="biomarkerTableBody"></tbody>
-            </table>
+            <div class="table-responsive">
+              <table class="biomarker-table">
+                <thead>
+                  <tr>
+                    <th>Biomarker Token / N-Gram</th>
+                    <th>Model Weight (\(w_{c,j}\))</th>
+                    <th>Diagnostic Correlation</th>
+                  </tr>
+                </thead>
+                <tbody id="biomarkerTableBody"></tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
@@ -455,12 +473,12 @@
 
   <!-- Fixed Status Bar Footer -->
   <footer class="status-bar">
-    <div class="chip"><span class="dot"></span> <b>SYSTEM OPERATIONAL</b></div>
-    <div class="chip">DISEASES: <b>15 VERIFIED CLASSES</b></div>
-    <div class="chip">FEATURES: <b>639 TF-IDF VECTORS</b></div>
+    <div class="chip"><span class="dot"></span> <b>OPERATIONAL</b></div>
+    <div class="chip hide-mobile">DISEASES: <b>15 CLASSES</b></div>
+    <div class="chip hide-mobile">FEATURES: <b>639 VECTORS</b></div>
     <div class="sp"></div>
     <span class="chip">UTC: <b id="utcTime">--:--:--</b></span>
-    <span class="chip">NODE: <b>LOCAL_SANDBOX // SECURE</b></span>
+    <span class="chip hide-mobile">NODE: <b>SECURE</b></span>
   </footer>
 
   <script src="{{ url_for('static', filename='script.js') }}"></script>

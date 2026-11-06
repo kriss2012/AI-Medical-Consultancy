@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>MED-OS // Admin Operations Deck</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -35,23 +35,23 @@
     </div>
 
     <!-- Metrics Grid -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 14px; margin-bottom: 24px;">
       
-      <div class="slate" style="padding: 18px;">
+      <div class="slate" style="padding: 16px;">
         <div class="presets-lbl">TOTAL REVENUE (INR)</div>
-        <div style="font-family: 'Chakra Petch', sans-serif; font-size: 32px; color: var(--emerald); font-weight: 700;" id="revenue">&#8377;0.00</div>
+        <div style="font-family: 'Chakra Petch', sans-serif; font-size: clamp(24px, 5vw, 32px); color: var(--emerald); font-weight: 700;" id="revenue">&#8377;0.00</div>
         <div style="font-size: 10px; color: var(--tx2); margin-top: 4px;">RAZORPAY VERIFIED SETTLEMENTS</div>
       </div>
 
-      <div class="slate" style="padding: 18px;">
+      <div class="slate" style="padding: 16px;">
         <div class="presets-lbl">TOTAL CLINICAL USERS</div>
-        <div style="font-family: 'Chakra Petch', sans-serif; font-size: 32px; color: #ffffff; font-weight: 700;" id="total-users">0</div>
+        <div style="font-family: 'Chakra Petch', sans-serif; font-size: clamp(24px, 5vw, 32px); color: #ffffff; font-weight: 700;" id="total-users">0</div>
         <div style="font-size: 10px; color: var(--tx2); margin-top: 4px;">GOOGLE OAUTH AUTHENTICATED PROFILES</div>
       </div>
 
-      <div class="slate" style="padding: 18px;">
+      <div class="slate" style="padding: 16px;">
         <div class="presets-lbl">PRO ACTIVE SUBSCRIBERS</div>
-        <div style="font-family: 'Chakra Petch', sans-serif; font-size: 32px; color: var(--cyan); font-weight: 700;" id="pro-users">0</div>
+        <div style="font-family: 'Chakra Petch', sans-serif; font-size: clamp(24px, 5vw, 32px); color: var(--cyan); font-weight: 700;" id="pro-users">0</div>
         <div style="font-size: 10px; color: var(--tx2); margin-top: 4px;">UNLIMITED INFERENCE LICENSE TIERS</div>
       </div>
 
@@ -66,19 +66,21 @@
         <span class="slate-badge" id="badgeTotalUsers">LIVE DATABASE SNAPSHOT</span>
       </div>
 
-      <table class="biomarker-table" style="margin-top: 10px;">
-        <thead>
-          <tr>
-            <th>CLINICAL OPERATOR</th>
-            <th>EMAIL IDENTITY</th>
-            <th>SUBSCRIPTION TIER</th>
-            <th style="text-align: right;">STATUS</th>
-          </tr>
-        </thead>
-        <tbody id="users-table">
-          <tr><td colspan="4" style="text-align: center; color: var(--tx2); padding: 20px;">Retrieving telemetry...</td></tr>
-        </tbody>
-      </table>
+      <div class="table-responsive">
+        <table class="biomarker-table" style="margin-top: 10px;">
+          <thead>
+            <tr>
+              <th>CLINICAL OPERATOR</th>
+              <th>EMAIL IDENTITY</th>
+              <th>SUBSCRIPTION TIER</th>
+              <th style="text-align: right;">STATUS</th>
+            </tr>
+          </thead>
+          <tbody id="users-table">
+            <tr><td colspan="4" style="text-align: center; color: var(--tx2); padding: 20px;">Retrieving telemetry...</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
   </div>
