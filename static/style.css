@@ -454,11 +454,11 @@ button.hud:hover, a.hud:hover {
   }
 }
 @media (max-width: 768px) {
-  .nav-actions .hud:not(.auth-btn):not(#btnUpgradePro) {
+  .nav-actions .hud:not(.btn-menu-toggle) {
     display: none; /* Moved into mobile drawer */
   }
   .brand-title small { display: none; }
-  .btn-menu-toggle { display: inline-flex; }
+  .btn-menu-toggle { display: inline-flex !important; }
 }
 @media (max-width: 480px) {
   .brand-title { font-size: 12px; letter-spacing: 0.12em; }
