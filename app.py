@@ -379,5 +379,5 @@ def get_config():
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    # Debug=True is fine for dev, but ProxyFix handles the Prod headers
-    app.run(debug=True, port=5000)
+    port = int(os.environ.get('PORT', 5001))
+    app.run(debug=False, port=port)
